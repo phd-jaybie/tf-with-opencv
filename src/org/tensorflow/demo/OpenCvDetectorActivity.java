@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Vector;
 
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
@@ -341,18 +342,18 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
     protected void processImage() {
         ++timestamp;
         final long currTimestamp = timestamp;
-        //byte[] originalLuminance = getLuminance();
-        final byte[] mBytes = getImageMat();
+        byte[] originalLuminance = getLuminance();
+        //final byte[] mBytes = getLuminance();//getImageMat();
 
         // Usually, this onFrame method below doesn't really happen as you would see in the toast
         // message that appears when you start up this detector app.
-        /*tracker.onFrame(
+        tracker.onFrame(
                 previewWidth,
                 previewHeight,
                 getLuminanceStride(),
                 sensorOrientation,
                 originalLuminance,
-                timestamp);*/
+                timestamp);
         trackingOverlay.postInvalidate();
 
         // No mutex needed as this method is not reentrant.
@@ -368,10 +369,10 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
 
         rgbFrameBitmap.setPixels(getRgbBytes(), 0, previewWidth, 0, 0, previewWidth, previewHeight);
 
-        /*if (luminanceCopy == null) {
+        if (luminanceCopy == null) {
             luminanceCopy = new byte[originalLuminance.length];
         }
-        System.arraycopy(originalLuminance, 0, luminanceCopy, 0, originalLuminance.length);*/
+        System.arraycopy(originalLuminance, 0, luminanceCopy, 0, originalLuminance.length);
         readyForNextImage();
 
         final Canvas canvas = new Canvas(croppedBitmap);
@@ -396,9 +397,14 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
 
                         ArrayList<org.opencv.core.Point> scenePoints = new ArrayList<>();
 
-                        Mat buf = new Mat(mWidth, mHeight, CvType.CV_8UC1);
-                        buf.put(0,0, mBytes);
-                        Mat mat = Imgcodecs.imdecode(buf, Imgcodecs.IMREAD_COLOR);
+                        //Mat buf = new Mat(mWidth, mHeight, CvType.CV_8UC1);
+                        //buf.put(0,0, luminanceCopy);
+                        //Mat mat = Imgcodecs.imdecode(buf, Imgcodecs.IMREAD_COLOR);
+                        Mat mat = new Mat();
+                        Utils.bitmapToMat(croppedBitmap,mat);
+
+                        LOGGER.d("Matrix has width: " + Integer.toString(mat.width())
+                                + " and height: " + Integer.toString(mat.height()));
 
                         SIFT mFeatureDetector = SIFT.create();
                         MatOfKeyPoint mKeyPoints = new MatOfKeyPoint();
@@ -453,11 +459,15 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
                         paint.setStrokeWidth(2.0f);
 
                         final Path path = new Path();
-                        path.moveTo((float) scenePoints.get(0).x, (float) scenePoints.get(0).y);
-                        path.lineTo((float) scenePoints.get(1).x, (float) scenePoints.get(1).y);
-                        path.lineTo((float) scenePoints.get(2).x, (float) scenePoints.get(2).y);
-                        path.lineTo((float) scenePoints.get(3).x, (float) scenePoints.get(3).y);
-                        path.close();
+                        if (!scenePoints.isEmpty()) {
+                            path.moveTo((float) scenePoints.get(0).x, (float) scenePoints.get(0).y);
+                            path.lineTo((float) scenePoints.get(1).x, (float) scenePoints.get(1).y);
+                            path.lineTo((float) scenePoints.get(2).x, (float) scenePoints.get(2).y);
+                            path.lineTo((float) scenePoints.get(3).x, (float) scenePoints.get(3).y);
+                            path.close();
+
+                            canvas.drawPath(path, paint);
+                        }
 
                         /*float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
                         switch (MODE) {
@@ -489,8 +499,6 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
                                 mappedRecognitions.add(result);
                             }
                         }*/
-
-                        canvas.drawPath(path, paint);
 
                         /*tracker.trackResults(mappedRecognitions, luminanceCopy, currTimestamp);*/
                         trackingOverlay.postInvalidate();

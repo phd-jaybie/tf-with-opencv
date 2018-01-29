@@ -249,11 +249,11 @@ public abstract class CameraActivity extends Activity
        * Below is the code for preparing OpenCV operations: converting the YUV raw camera capture
        * to a byte[] buffer.
        */
-      matCvHeight = image.getHeight();
+      /*matCvHeight = image.getHeight();
       matCvWidth = image.getWidth();
       ByteBuffer buffer = planes[0].getBuffer();
       cvBytes = new byte[buffer.remaining()];
-      buffer.get(cvBytes);
+      buffer.get(cvBytes);*/
 
       imageConverter =
           new Runnable() {
