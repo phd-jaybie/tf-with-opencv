@@ -43,6 +43,10 @@ public class OverlayView extends View {
     callbacks.add(callback);
   }
 
+  /**
+   * Just reiterating, the canvas here IS the view, i.e. the OverlayView opbject. Unlike a normal
+   * Canvas operation in which you would use a bitmap (check Canvas definition).
+   */
   @Override
   public synchronized void draw(final Canvas canvas) {
     for (final DrawCallback callback : callbacks) {

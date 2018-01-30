@@ -130,6 +130,7 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
     private byte[] luminanceCopy;
 
     private BorderedText borderedText;
+
     @Override
     public void onPreviewSizeChosen(final Size size, final int rotation) {
         final float textSizePx =
@@ -209,6 +210,10 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
                     }
                 });
 
+        /**
+         * This following addCallback is declared in the CameraActivity class and is another method
+         * implementation of the addCallback from the OverlayView.
+         */
         addCallback(
                 new DrawCallback() {
                     @Override
@@ -254,10 +259,61 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
     }
 
     /**
-     * Processes the JPEG {@link Image} using OpenCV.
+     * Processes the image using OpenCV, i.e. SIFT algorithm.
+     * Two parts: feature extraction then matching.
      */
+    private Path ImageDetector(Bitmap bitmap){
+
+        ArrayList<org.opencv.core.Point> scenePoints = new ArrayList<>();
+        final SIFT mFeatureDetector = SIFT.create();
+        final MatOfKeyPoint mKeyPoints = new MatOfKeyPoint();
+        final Mat mDescriptors = new Mat();
+
+        long startTime = System.currentTimeMillis();
+
+        Mat mat = new Mat();
+        Utils.bitmapToMat(bitmap,mat);
+
+        LOGGER.d("Matrix has width: " + Integer.toString(mat.width())
+                + " and height: " + Integer.toString(mat.height()));
+
+        try {
+            mFeatureDetector.detect(mat, mKeyPoints);
+            mFeatureDetector.compute(mat, mKeyPoints, mDescriptors);
+            LOGGER.d("Time to Extract locally: " + Long.toString((System.currentTimeMillis() - startTime))
+                    + ", Number of Key points: " + mKeyPoints.toArray().length);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            LOGGER.d("Cannot process.");
+        } /**finally
+         } */
+
+        if (0 != mKeyPoints.toArray().length) {
+            scenePoints = ImageMatcher(mKeyPoints, mDescriptors);
+            //Imgproc.drawContours(mat, scenePoints, 0, new Scalar(255, 0, 0), 3);
+            // for using the draw contours again, please change scenePoints from
+            // ArrayList<Point> to List<MatOfPoint>, and change the ImageMatcher
+            // return value as well to List<MatOfPoint> type.
+        } else {
+            LOGGER.d("Cannot process: No key points");
+        }
+
+        lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
+
+        final Path path = new Path();
+        if (!scenePoints.isEmpty()) {
+            path.moveTo((float) scenePoints.get(0).x, (float) scenePoints.get(0).y);
+            path.lineTo((float) scenePoints.get(1).x, (float) scenePoints.get(1).y);
+            path.lineTo((float) scenePoints.get(2).x, (float) scenePoints.get(2).y);
+            path.lineTo((float) scenePoints.get(3).x, (float) scenePoints.get(3).y);
+            path.close();
+        }
+
+        return path;
+    }
+
     private ArrayList<org.opencv.core.Point> ImageMatcher(MatOfKeyPoint keyPoints, Mat descriptors){
-        final String TAG = "LocalImageMatcher";
 
         ArrayList<org.opencv.core.Point> points = new ArrayList<>();
         List<MatOfPoint> mScenePoints = new ArrayList<>();
@@ -316,18 +372,18 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
             mScenePoints.add(sceneCorners);
 
             if (Imgproc.contourArea(mScenePoints.get(0)) > (MIN_MATCH_COUNT*MIN_MATCH_COUNT)) {
-                Log.d(TAG, "Time to Match: " + Long.toString((time1 - time))
+                LOGGER.i("Time to Match: " + Long.toString((time1 - time))
                         + ", Number of matches: " + good_matches.size()
                         + " (" + Integer.toString(MIN_MATCH_COUNT) + ")"
                         + ", Time to transform: " + Long.toString((System.currentTimeMillis() - time1)));
             } else {
-                Log.d(TAG, "Time to Match: " + Long.toString((time1 - time))
+                LOGGER.i( "Time to Match: " + Long.toString((time1 - time))
                         + ", Object probably not in view even with " + good_matches.size()
                         + " (" + Integer.toString(MIN_MATCH_COUNT) + ") matches.");
             }
             //result = "Enough matches.";
         } else {
-            Log.d(TAG, "Time to Match: " + Long.toString((System.currentTimeMillis() - time))
+            LOGGER.i( "Time to Match: " + Long.toString((System.currentTimeMillis() - time))
                     + ", Not Enough Matches (" + good_matches.size()
                     + "/" + Integer.toString(MIN_MATCH_COUNT) + ")");
             //result = "Not enough matches.";
@@ -364,9 +420,6 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
         computingDetection = true;
         LOGGER.i("Preparing image " + currTimestamp + " for detection in bg thread.");
 
-        final int mWidth = matCvWidth;
-        final int mHeight = matCvHeight;
-
         rgbFrameBitmap.setPixels(getRgbBytes(), 0, previewWidth, 0, 0, previewWidth, previewHeight);
 
         if (luminanceCopy == null) {
@@ -388,67 +441,9 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
                     public void run() {
                         LOGGER.i("Running detection on image " + currTimestamp);
                         final long startTime = SystemClock.uptimeMillis();
-                        //final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
-
-                        /**
-                         * Below are the snippet of code that is used to process the image.
-                         * Until --> *!*
-                         */
-
-                        ArrayList<org.opencv.core.Point> scenePoints = new ArrayList<>();
-
-                        //Mat buf = new Mat(mWidth, mHeight, CvType.CV_8UC1);
-                        //buf.put(0,0, luminanceCopy);
-                        //Mat mat = Imgcodecs.imdecode(buf, Imgcodecs.IMREAD_COLOR);
-                        Mat mat = new Mat();
-                        Utils.bitmapToMat(croppedBitmap,mat);
-
-                        LOGGER.d("Matrix has width: " + Integer.toString(mat.width())
-                                + " and height: " + Integer.toString(mat.height()));
-
-                        SIFT mFeatureDetector = SIFT.create();
-                        MatOfKeyPoint mKeyPoints = new MatOfKeyPoint();
-                        Mat mDescriptors = new Mat();
-
-                        /** Resizing image *
-                         Mat nMat = new Mat();
-                         org.opencv.core.Size sz = new org.opencv.core.Size(mat.width()/nResolutionDivider,mat.height()/nResolutionDivider);
-                         Imgproc.resize( mat, nMat, sz );*/
-
-                        long time2 = System.currentTimeMillis();
-
-                        try {
-                            mFeatureDetector.detect(mat, mKeyPoints);
-                            mFeatureDetector.compute(mat, mKeyPoints, mDescriptors);
-                            LOGGER.d("Height: " + Integer.toString(mHeight)
-                                    + ", Width: " + Integer.toString(mWidth)
-                                    + " Time to Extract locally: " + Long.toString((System.currentTimeMillis() - time2))
-                                    + ", Number of Key points: " + mKeyPoints.toArray().length);
-
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            LOGGER.d("Cannot process.");
-                        } /**finally
-                         } */
-
-                        if (0 != mKeyPoints.toArray().length) {
-                            scenePoints = ImageMatcher(mKeyPoints, mDescriptors);
-                            //Imgproc.drawContours(mat, scenePoints, 0, new Scalar(255, 0, 0), 3);
-                            // for using the draw contours again, please change scenePoints from
-                            // ArrayList<Point> to List<MatOfPoint>
-                        } else {
-                            LOGGER.d("Cannot process: No key points");
-                        }
-
-                        // save output image
-                        /*File cvFile = new File(getActivity().getExternalFilesDir(null), "cv_local_process.jpg");
-                        String filename = cvFile.getAbsolutePath();
-                        Imgcodecs.imwrite(filename, mat);*/
-
-                        /**
-                         * Ends here <-- *!*
-                         */
-
+                        final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
+                        final long tfToCvTime = SystemClock.uptimeMillis() - startTime;
+                        final Path path = ImageDetector(croppedBitmap);
                         lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
 
                         cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
@@ -458,18 +453,7 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
                         paint.setStyle(Style.STROKE);
                         paint.setStrokeWidth(2.0f);
 
-                        final Path path = new Path();
-                        if (!scenePoints.isEmpty()) {
-                            path.moveTo((float) scenePoints.get(0).x, (float) scenePoints.get(0).y);
-                            path.lineTo((float) scenePoints.get(1).x, (float) scenePoints.get(1).y);
-                            path.lineTo((float) scenePoints.get(2).x, (float) scenePoints.get(2).y);
-                            path.lineTo((float) scenePoints.get(3).x, (float) scenePoints.get(3).y);
-                            path.close();
-
-                            canvas.drawPath(path, paint);
-                        }
-
-                        /*float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
+                        float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
                         switch (MODE) {
                             case TF_OD_API:
                                 minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
@@ -485,6 +469,11 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
                         final List<Classifier.Recognition> mappedRecognitions =
                                 new LinkedList<Classifier.Recognition>();
 
+                        // This draws the bounding box for the detected object using OpenCV-SIFT.
+                        if (!path.isEmpty()){
+                            canvas.drawPath(path, paint);
+                        }
+
                         for (final Classifier.Recognition result : results) {
                             final RectF location = result.getLocation();
                             if (location != null && result.getConfidence() >= minimumConfidence) {
@@ -498,13 +487,19 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
                                 result.setLocation(location);
                                 mappedRecognitions.add(result);
                             }
-                        }*/
+                        }
 
-                        /*tracker.trackResults(mappedRecognitions, luminanceCopy, currTimestamp);*/
+                        tracker.trackResults(mappedRecognitions, luminanceCopy, currTimestamp);
                         trackingOverlay.postInvalidate();
 
                         requestRender();
                         computingDetection = false;
+
+                        LOGGER.i("TF detection: %d ms, OpenCV: %d ms" +
+                                " and overall frame processing %d ms.", tfToCvTime,
+                                lastProcessingTimeMs - tfToCvTime,
+                                SystemClock.uptimeMillis() - startTime);
+
                     }
                 });
     }

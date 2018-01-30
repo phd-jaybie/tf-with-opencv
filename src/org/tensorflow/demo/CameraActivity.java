@@ -83,7 +83,7 @@ public abstract class CameraActivity extends Activity
   private Runnable imageConverter;
 
   // Global values and containers for detection using OpenCV.
-  public static Integer MIN_MATCH_COUNT = 60;
+  public static Integer MIN_MATCH_COUNT = 30;
   public static Mat objImageMat;
   public static MatOfKeyPoint mRefKeyPoints;
   public static Mat mRefDescriptors;
@@ -112,37 +112,33 @@ public abstract class CameraActivity extends Activity
     }
 
     /** Extract the reference SIFT features */
-    handler.post(new RefImageMat());
+    handler.post(
+            new Runnable() {
+              @Override
+              public void run() {
+                mRefKeyPoints = new MatOfKeyPoint();
+                mRefDescriptors = new Mat();
+                objImageMat = new Mat();
 
-  }
+                try {
+                  objImageMat = Utils.loadResource(CameraActivity.this, R.drawable.train, Imgcodecs.CV_LOAD_IMAGE_COLOR);
+                  SIFT mFeatureDetector = SIFT.create();
 
-  /** Just for testing SIFT. */
-  private class RefImageMat implements Runnable {
+                  LOGGER.i("Height: " + Integer.toString(objImageMat.height())
+                          + ", Width: " + Integer.toString(objImageMat.width()));
 
-    @Override
-    public void run() {
+                  long time = System.currentTimeMillis();
 
-      mRefKeyPoints = new MatOfKeyPoint();
-      mRefDescriptors = new Mat();
-      objImageMat = new Mat();
+                  mFeatureDetector.detect(objImageMat, mRefKeyPoints);
+                  mFeatureDetector.compute(objImageMat, mRefKeyPoints, mRefDescriptors);
+                  LOGGER.i("Time to process " + (System.currentTimeMillis() - time) +
+                          ", Number of key points: " + mRefKeyPoints.toArray().length);
+                } catch (Exception e) {
+                  e.printStackTrace();
+                }
 
-      try {
-        objImageMat = Utils.loadResource(CameraActivity.this, R.drawable.train, Imgcodecs.CV_LOAD_IMAGE_COLOR);
-        SIFT mFeatureDetector = SIFT.create();
-
-        LOGGER.i("Height: " + Integer.toString(objImageMat.height())
-                + ", Width: " + Integer.toString(objImageMat.width()));
-
-        long time = System.currentTimeMillis();
-
-        mFeatureDetector.detect(objImageMat, mRefKeyPoints);
-        mFeatureDetector.compute(objImageMat, mRefKeyPoints, mRefDescriptors);
-        LOGGER.i("Time to process " + (System.currentTimeMillis() - time) +
-                ", Number of key points: " + mRefKeyPoints.toArray().length);
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-    }
+              }
+            });
 
   }
 
@@ -160,11 +156,6 @@ public abstract class CameraActivity extends Activity
   protected byte[] getLuminance() {
     return yuvBytes[0];
   }
-
-  protected byte[] getImageMat() {
-    return cvBytes;
-  }
-
 
   /**
    * Callback for android.hardware.Camera API
@@ -244,16 +235,6 @@ public abstract class CameraActivity extends Activity
       yRowStride = planes[0].getRowStride();
       final int uvRowStride = planes[1].getRowStride();
       final int uvPixelStride = planes[1].getPixelStride();
-
-      /**
-       * Below is the code for preparing OpenCV operations: converting the YUV raw camera capture
-       * to a byte[] buffer.
-       */
-      /*matCvHeight = image.getHeight();
-      matCvWidth = image.getWidth();
-      ByteBuffer buffer = planes[0].getBuffer();
-      cvBytes = new byte[buffer.remaining()];
-      buffer.get(cvBytes);*/
 
       imageConverter =
           new Runnable() {

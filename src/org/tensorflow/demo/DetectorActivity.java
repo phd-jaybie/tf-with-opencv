@@ -197,6 +197,12 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
           }
         });
 
+    /**
+     * This callback below is for the debug_overlay view which is called in the more generic
+     * CameraActivity class. Bear in mind that there is a difference in the canvases used between
+     * this and the callback above (which is for the tracking_overlay view. However, both are
+     * OverlayViews (see layout XML) but are two separate instances that are on top of each other.
+     */
     addCallback(
         new DrawCallback() {
           @Override
@@ -332,8 +338,12 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
             requestRender();
             computingDetection = false;
+
+            LOGGER.i("Object detection time %d ms and overall frame processing %d ms.", lastProcessingTimeMs, SystemClock.uptimeMillis() - startTime);
+
           }
         });
+
   }
 
   @Override
