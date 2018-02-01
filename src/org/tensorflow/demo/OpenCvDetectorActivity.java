@@ -18,6 +18,7 @@ import android.media.Image;
 import android.media.ImageReader.OnImageAvailableListener;
 import android.os.SystemClock;
 import android.util.Log;
+import android.util.Pair;
 import android.util.Size;
 import android.util.TypedValue;
 import android.view.Display;
@@ -27,33 +28,22 @@ import android.widget.Toast;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
 
-import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
-import org.opencv.calib3d.Calib3d;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
-import org.opencv.core.DMatch;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfDMatch;
-import org.opencv.core.MatOfKeyPoint;
-import org.opencv.core.MatOfPoint;
-import org.opencv.core.MatOfPoint2f;
-import org.opencv.core.Scalar;
-import org.opencv.features2d.FlannBasedMatcher;
-import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.imgproc.Imgproc;
-import org.opencv.xfeatures2d.SIFT;
 import org.tensorflow.demo.OverlayView.DrawCallback;
+import org.tensorflow.demo.cv.CvDetector;
+import org.tensorflow.demo.cv.SiftDetector;
 import org.tensorflow.demo.env.BorderedText;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.tracking.MultiBoxTracker;
 import org.tensorflow.demo.R; // Explicit import needed for internal Google builds.
+
+import augmenting.Augmenter;
 
 /**
  * An activity that follows Tensorflow's demo DetectorActivity class as template and implements
@@ -111,7 +101,8 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
 
     private Integer sensorOrientation;
 
-    private Classifier detector;
+    private Classifier detector; //for TF detection
+    private CvDetector cvDetector; //for OpenCV detection
 
     private long lastProcessingTimeMs;
     private Bitmap rgbFrameBitmap = null;
@@ -131,6 +122,11 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
 
     private BorderedText borderedText;
 
+    OverlayView trackingOverlay;
+
+    private OverlayView augmentedOverlay;
+    private Augmenter augmenter;
+
     @Override
     public void onPreviewSizeChosen(final Size size, final int rotation) {
         final float textSizePx =
@@ -140,6 +136,7 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
         borderedText.setTypeface(Typeface.MONOSPACE);
 
         tracker = new MultiBoxTracker(this);
+        augmenter = new Augmenter(this);
 
         int cropSize = TF_OD_API_INPUT_SIZE;
         if (MODE == DetectorMode.YOLO) {
@@ -178,6 +175,11 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
                 finish();
             }
         }
+
+        /**
+         * Inserted the line below for the OpenCV Detector.
+         */
+        cvDetector = SiftDetector.create();
 
         previewWidth = size.getWidth();
         previewHeight = size.getHeight();
@@ -218,9 +220,9 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
                 new DrawCallback() {
                     @Override
                     public void drawCallback(final Canvas canvas) {
-                        if (!isDebug()) {
-                            return;
-                        }
+                        //if (!isDebug()) {
+                        //    return;
+                        //}
                         final Bitmap copy = cropCopyBitmap;
                         if (copy == null) {
                             return;
@@ -256,143 +258,16 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
                         borderedText.drawLines(canvas, 10, canvas.getHeight() - 10, lines);
                     }
                 });
+
+        augmentedOverlay = (OverlayView) findViewById(R.id.augmented_overlay);
+        augmentedOverlay.addCallback(
+                new DrawCallback() {
+                    @Override
+                    public void drawCallback(final Canvas canvas) {
+                        augmenter.drawAugmentations(canvas);
+                    }
+                });
     }
-
-    /**
-     * Processes the image using OpenCV, i.e. SIFT algorithm.
-     * Two parts: feature extraction then matching.
-     */
-    private Path ImageDetector(Bitmap bitmap){
-
-        ArrayList<org.opencv.core.Point> scenePoints = new ArrayList<>();
-        final SIFT mFeatureDetector = SIFT.create();
-        final MatOfKeyPoint mKeyPoints = new MatOfKeyPoint();
-        final Mat mDescriptors = new Mat();
-
-        long startTime = System.currentTimeMillis();
-
-        Mat mat = new Mat();
-        Utils.bitmapToMat(bitmap,mat);
-
-        LOGGER.d("Matrix has width: " + Integer.toString(mat.width())
-                + " and height: " + Integer.toString(mat.height()));
-
-        try {
-            mFeatureDetector.detect(mat, mKeyPoints);
-            mFeatureDetector.compute(mat, mKeyPoints, mDescriptors);
-            LOGGER.d("Time to Extract locally: " + Long.toString((System.currentTimeMillis() - startTime))
-                    + ", Number of Key points: " + mKeyPoints.toArray().length);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            LOGGER.d("Cannot process.");
-        } /**finally
-         } */
-
-        if (0 != mKeyPoints.toArray().length) {
-            scenePoints = ImageMatcher(mKeyPoints, mDescriptors);
-            //Imgproc.drawContours(mat, scenePoints, 0, new Scalar(255, 0, 0), 3);
-            // for using the draw contours again, please change scenePoints from
-            // ArrayList<Point> to List<MatOfPoint>, and change the ImageMatcher
-            // return value as well to List<MatOfPoint> type.
-        } else {
-            LOGGER.d("Cannot process: No key points");
-        }
-
-        lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
-
-        final Path path = new Path();
-        if (!scenePoints.isEmpty()) {
-            path.moveTo((float) scenePoints.get(0).x, (float) scenePoints.get(0).y);
-            path.lineTo((float) scenePoints.get(1).x, (float) scenePoints.get(1).y);
-            path.lineTo((float) scenePoints.get(2).x, (float) scenePoints.get(2).y);
-            path.lineTo((float) scenePoints.get(3).x, (float) scenePoints.get(3).y);
-            path.close();
-        }
-
-        return path;
-    }
-
-    private ArrayList<org.opencv.core.Point> ImageMatcher(MatOfKeyPoint keyPoints, Mat descriptors){
-
-        ArrayList<org.opencv.core.Point> points = new ArrayList<>();
-        List<MatOfPoint> mScenePoints = new ArrayList<>();
-        List<MatOfDMatch> matches = new ArrayList<>();
-        FlannBasedMatcher descriptorMatcher = FlannBasedMatcher.create();
-        descriptorMatcher.knnMatch(mRefDescriptors, descriptors, matches, 2);
-
-        long time = System.currentTimeMillis();
-
-        // ratio test
-        LinkedList<DMatch> good_matches = new LinkedList<>();
-        for (Iterator<MatOfDMatch> iterator = matches.iterator(); iterator.hasNext();) {
-            MatOfDMatch matOfDMatch = iterator.next();
-            if (matOfDMatch.toArray()[0].distance / matOfDMatch.toArray()[1].distance < 0.75) {
-                good_matches.add(matOfDMatch.toArray()[0]);
-            }
-        }
-
-        long time1 = System.currentTimeMillis();
-
-        if (good_matches.size()>MIN_MATCH_COUNT){
-            /** get keypoint coordinates of good matches to find homography and remove outliers using ransac */
-            List<org.opencv.core.Point> refPoints = new ArrayList<>();
-            List<org.opencv.core.Point> mPoints = new ArrayList<>();
-            for(int i = 0; i<good_matches.size(); i++){
-                refPoints.add(mRefKeyPoints.toList().get(good_matches.get(i).queryIdx).pt);
-                mPoints.add(keyPoints.toList().get(good_matches.get(i).trainIdx).pt);
-            }
-            // convertion of data types - there is maybe a more beautiful way
-            Mat outputMask = new Mat();
-            MatOfPoint2f rPtsMat = new MatOfPoint2f();
-            rPtsMat.fromList(refPoints);
-            MatOfPoint2f mPtsMat = new MatOfPoint2f();
-            mPtsMat.fromList(mPoints);
-
-            Mat obj_corners = new Mat(4,1,CvType.CV_32FC2);
-            Mat scene_corners = new Mat(4,1,CvType.CV_32FC2);
-
-            obj_corners.put(0, 0, new double[] {0,0});
-            obj_corners.put(1, 0, new double[] {objImageMat.width()-1,0});
-            obj_corners.put(2, 0, new double[] {objImageMat.width()-1,objImageMat.height()-1});
-            obj_corners.put(3, 0, new double[] {0,objImageMat.height()-1});
-
-            // Find homography - here just used to perform match filtering with RANSAC, but could be used to e.g. stitch images
-            // the smaller the allowed reprojection error (here 15), the more matches are filtered
-            Mat Homog = Calib3d.findHomography(rPtsMat, mPtsMat, Calib3d.RANSAC, 15, outputMask, 2000, 0.995);
-            Core.perspectiveTransform(obj_corners,scene_corners,Homog);
-
-            MatOfPoint sceneCorners = new MatOfPoint();
-            for (int i=0; i < scene_corners.rows(); i++) {
-                org.opencv.core.Point point = new org.opencv.core.Point();
-                point.set(scene_corners.get(i,0));
-                points.add(point);
-            }
-            sceneCorners.fromList(points);
-            mScenePoints.add(sceneCorners);
-
-            if (Imgproc.contourArea(mScenePoints.get(0)) > (MIN_MATCH_COUNT*MIN_MATCH_COUNT)) {
-                LOGGER.i("Time to Match: " + Long.toString((time1 - time))
-                        + ", Number of matches: " + good_matches.size()
-                        + " (" + Integer.toString(MIN_MATCH_COUNT) + ")"
-                        + ", Time to transform: " + Long.toString((System.currentTimeMillis() - time1)));
-            } else {
-                LOGGER.i( "Time to Match: " + Long.toString((time1 - time))
-                        + ", Object probably not in view even with " + good_matches.size()
-                        + " (" + Integer.toString(MIN_MATCH_COUNT) + ") matches.");
-            }
-            //result = "Enough matches.";
-        } else {
-            LOGGER.i( "Time to Match: " + Long.toString((System.currentTimeMillis() - time))
-                    + ", Not Enough Matches (" + good_matches.size()
-                    + "/" + Integer.toString(MIN_MATCH_COUNT) + ")");
-            //result = "Not enough matches.";
-        }
-
-        return points; //mScenePoints; for using drawContours
-    }
-
-    OverlayView trackingOverlay;
 
     @Override
     protected void processImage() {
@@ -441,9 +316,18 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
                     public void run() {
                         LOGGER.i("Running detection on image " + currTimestamp);
                         final long startTime = SystemClock.uptimeMillis();
+                        /**
+                         * NOte: the detector is actually TF_OD_API so it calls
+                         * TensorFlowOnjectDetectionAPIModel  class.
+                         */
                         final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
                         final long tfToCvTime = SystemClock.uptimeMillis() - startTime;
-                        final Path path = ImageDetector(croppedBitmap);
+
+                        /**
+                         * The result from the OpenCV-SIFT detector is in a pair of Path and RectF,
+                         * for the cropped image and the overlay box respectively.
+                         */
+                        final Pair<Path, RectF> CvResult = cvDetector.imageDetector(croppedBitmap);
                         lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
 
                         cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
@@ -470,8 +354,12 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
                                 new LinkedList<Classifier.Recognition>();
 
                         // This draws the bounding box for the detected object using OpenCV-SIFT.
-                        if (!path.isEmpty()){
-                            canvas.drawPath(path, paint);
+                        if (!CvResult.first.isEmpty()){
+                            canvas.drawPath(CvResult.first, paint);
+                            cropToFrameTransform.mapRect(CvResult.second);
+                            Classifier.Recognition cvDetection = new Classifier.Recognition(
+                                    "SIFT","UHU White Tack",minimumConfidence,CvResult.second);
+                            mappedRecognitions.add(cvDetection);
                         }
 
                         for (final Classifier.Recognition result : results) {
@@ -490,6 +378,7 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
                         }
 
                         tracker.trackResults(mappedRecognitions, luminanceCopy, currTimestamp);
+                        augmenter.trackResults(mappedRecognitions, luminanceCopy, currTimestamp);
                         trackingOverlay.postInvalidate();
 
                         requestRender();
@@ -506,7 +395,7 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
 
     @Override
     protected int getLayoutId() {
-        return R.layout.camera_connection_fragment_tracking;
+        return R.layout.camera_connection_fragment_augmented;
     }
 
     @Override

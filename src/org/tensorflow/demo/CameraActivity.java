@@ -72,10 +72,6 @@ public abstract class CameraActivity extends Activity
   private int[] rgbBytes = null;
   private int yRowStride;
 
-  private byte[] cvBytes;
-  protected int matCvHeight;
-  protected int matCvWidth;
-
   protected int previewWidth = 0;
   protected int previewHeight = 0;
 
