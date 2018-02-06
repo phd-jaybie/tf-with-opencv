@@ -51,6 +51,7 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.xfeatures2d.SIFT;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
+import org.tensorflow.demo.phd.MrObjectManager;
 import org.tensorflow.demo.simulator.AppRandomizer;
 import org.tensorflow.demo.simulator.Randomizer;
 
@@ -78,6 +79,9 @@ public abstract class MrCameraActivity extends Activity
 
   private Runnable postInferenceCallback;
   private Runnable imageConverter;
+
+  // This is the Global object manager for MrObjects.
+  protected static MrObjectManager manager;
 
   // Global values and containers for detection using OpenCV.
   public static Integer MIN_MATCH_COUNT = 30;
@@ -153,6 +157,9 @@ public abstract class MrCameraActivity extends Activity
        appLogMessage = appLogMessage + ", " +app.getName();
     }
     LOGGER.i(appLogMessage);
+
+    // creating an instance of the MrObjectManager
+    manager = new MrObjectManager();
 
   }
 
@@ -308,6 +315,7 @@ public abstract class MrCameraActivity extends Activity
     super.onStart();
 
     startBackgroundThread();
+    manager.generateList();
   }
 
   @Override
@@ -316,6 +324,7 @@ public abstract class MrCameraActivity extends Activity
     super.onResume();
 
     startBackgroundThread();
+    manager.generateList();
   }
 
   @Override
@@ -330,6 +339,7 @@ public abstract class MrCameraActivity extends Activity
     stopBackgroundThread();
 
     super.onPause();
+    manager.storeList();
   }
 
   @Override

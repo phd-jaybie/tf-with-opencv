@@ -25,8 +25,8 @@ import android.util.Size;
 import android.util.TypedValue;
 import android.widget.Toast;
 
-import org.tensorflow.demo.MrCameraActivity;
 import org.tensorflow.demo.Classifier;
+import org.tensorflow.demo.MrCameraActivity;
 import org.tensorflow.demo.OverlayView;
 import org.tensorflow.demo.OverlayView.DrawCallback;
 import org.tensorflow.demo.R;
@@ -52,7 +52,7 @@ import java.util.Vector;
  * An activity that follows Tensorflow's demo DetectorActivity class as template and implements
  * classical visual detection using OpenCV.
  */
-public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnImageAvailableListener {
+public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraActivity implements OnImageAvailableListener {
     private static final Logger LOGGER = new Logger();
 
     // Configuration values for the prepackaged multibox model.
@@ -131,8 +131,6 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
     private OverlayView augmentedOverlay;
     private Augmenter augmenter;
 
-    private MrObjectManager manager;
-
     @Override
     public void onPreviewSizeChosen(final Size size, final int rotation) {
         final float textSizePx =
@@ -143,7 +141,6 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
 
         tracker = new MultiBoxTracker(this);
         augmenter = new Augmenter();
-        manager = new MrObjectManager();
 
         int cropSize = TF_OD_API_INPUT_SIZE;
         if (MODE == DetectorMode.YOLO) {
@@ -394,7 +391,7 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                                             dResult.setLocation(location);
                                             mappedRecognitions.add(dResult);
 
-                                            //manager.processDetection(app, dResult);
+                                            manager.processDetection(app, dResult);
                                         }
                                     }
 
@@ -409,7 +406,7 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                                             "SIFT",cvResult.getTitle(),minimumConfidence,cvResult.getLocation().second);
                                     mappedRecognitions.add(cvDetection);
 
-                                    //manager.processDetection(app, cvResult);
+                                    manager.processDetection(app, cvResult);
 
                                     break;
                                 case "TF_CLASSIFFIER":
@@ -425,7 +422,7 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                                             cResult.setLocation(location);
                                             mappedRecognitions.add(cResult);
 
-                                            //manager.processDetection(app, cResult);
+                                            manager.processDetection(app, cResult);
                                         }
                                     }
 
