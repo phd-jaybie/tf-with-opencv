@@ -31,21 +31,21 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.tensorflow.demo.CameraActivity.MIN_MATCH_COUNT;
-import static org.tensorflow.demo.CameraActivity.mRefDescriptors;
-import static org.tensorflow.demo.CameraActivity.mRefKeyPoints;
-import static org.tensorflow.demo.CameraActivity.objImageMat;
+import static org.tensorflow.demo.MrCameraActivity.MIN_MATCH_COUNT;
+import static org.tensorflow.demo.MrCameraActivity.mRefDescriptors;
+import static org.tensorflow.demo.MrCameraActivity.mRefKeyPoints;
+import static org.tensorflow.demo.MrCameraActivity.objImageMat;
 
 public class SiftDetector implements CvDetector{
     private static final Logger LOGGER = new Logger();
 
-    public static CvDetector create() {
+    public static SiftDetector create() {
         final SiftDetector detector = new SiftDetector();
         return detector;
     }
 
     @Override
-    public Pair<Path, RectF> imageDetector(Bitmap bitmap){
+    public Recognition imageDetector(Bitmap bitmap){
 
         ArrayList<org.opencv.core.Point> scenePoints = new ArrayList<>();
         final SIFT mFeatureDetector = SIFT.create();
@@ -112,11 +112,8 @@ public class SiftDetector implements CvDetector{
             location.set(xValues[0], yValues[0], xValues[3], yValues[3]);
         }
 
-        Pair<Path, RectF> result = new Pair(path, location);
-
-        return result;
+        return new Recognition("",Pair.create(path, location));
     }
-
 
     private ArrayList<Point> ImageMatcher(MatOfKeyPoint keyPoints, Mat descriptors){
 

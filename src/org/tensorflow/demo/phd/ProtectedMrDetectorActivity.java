@@ -1,7 +1,10 @@
-package org.tensorflow.demo;
+package org.tensorflow.demo.phd;
 
 /**
- * Created by deg032 on 25/1/18.
+ * Created by deg032 on 5/2/18.
+ *
+ * This is the first attempt to create a 'local' abstraction overlay that presents an object-level
+ * fine-grained access control
  */
 
 import android.graphics.Bitmap;
@@ -11,45 +14,42 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
-import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.Typeface;
-import android.media.Image;
 import android.media.ImageReader.OnImageAvailableListener;
 import android.os.SystemClock;
-import android.util.Log;
-import android.util.Pair;
 import android.util.Size;
 import android.util.TypedValue;
-import android.view.Display;
-import android.view.Surface;
 import android.widget.Toast;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Vector;
-
+import org.tensorflow.demo.MrCameraActivity;
+import org.tensorflow.demo.Classifier;
+import org.tensorflow.demo.OverlayView;
 import org.tensorflow.demo.OverlayView.DrawCallback;
+import org.tensorflow.demo.R;
+import org.tensorflow.demo.TensorFlowMultiBoxDetector;
+import org.tensorflow.demo.TensorFlowObjectDetectionAPIModel;
+import org.tensorflow.demo.TensorFlowYoloDetector;
+import org.tensorflow.demo.augmenting.Augmenter;
 import org.tensorflow.demo.cv.CvDetector;
 import org.tensorflow.demo.cv.SiftDetector;
 import org.tensorflow.demo.env.BorderedText;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
+import org.tensorflow.demo.simulator.AppRandomizer;
 import org.tensorflow.demo.tracking.MultiBoxTracker;
-import org.tensorflow.demo.R; // Explicit import needed for internal Google builds.
 
-import augmenting.Augmenter;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Vector;
 
 /**
  * An activity that follows Tensorflow's demo DetectorActivity class as template and implements
  * classical visual detection using OpenCV.
  */
-public class OpenCvDetectorActivity extends CameraActivity implements OnImageAvailableListener {
+public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnImageAvailableListener {
     private static final Logger LOGGER = new Logger();
 
     // Configuration values for the prepackaged multibox model.
@@ -102,7 +102,8 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
     private Integer sensorOrientation;
 
     private Classifier detector; //for TF detection
-    private CvDetector cvDetector; //for OpenCV detection
+    //private Classifier classifier; //for TF classification
+    private SiftDetector cvDetector; //for OpenCV detection
 
     private long lastProcessingTimeMs;
     private Bitmap rgbFrameBitmap = null;
@@ -214,7 +215,8 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
 
         /**
          * This following addCallback is declared in the CameraActivity class and is another method
-         * implementation of the addCallback from the OverlayView.
+         * implementation of the addCallback from the OverlayView. Also, this is the one that
+         * draws on the debug_overlay, whereas the previous one is for the tracking_overlay.
          */
         addCallback(
                 new DrawCallback() {
@@ -259,6 +261,12 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
                     }
                 });
 
+        /**
+         * We have created this augmented overlay in which augmentations are to be rendered.
+         * Due to the preset canvas type it accesses, for the meantime we use this canvas types to
+         * draw. However, future implementations may want to use a GL type View so as to draw GL
+         * objects (which has more 3D support than canvas).
+         */
         augmentedOverlay = (OverlayView) findViewById(R.id.augmented_overlay);
         augmentedOverlay.addCallback(
                 new DrawCallback() {
@@ -274,7 +282,6 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
         ++timestamp;
         final long currTimestamp = timestamp;
         byte[] originalLuminance = getLuminance();
-        //final byte[] mBytes = getLuminance();//getImageMat();
 
         // Usually, this onFrame method below doesn't really happen as you would see in the toast
         // message that appears when you start up this detector app.
@@ -314,21 +321,6 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
                 new Runnable() {
                     @Override
                     public void run() {
-                        LOGGER.i("Running detection on image " + currTimestamp);
-                        final long startTime = SystemClock.uptimeMillis();
-                        /**
-                         * NOte: the detector is actually TF_OD_API so it calls
-                         * TensorFlowOnjectDetectionAPIModel  class.
-                         */
-                        final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
-                        final long tfToCvTime = SystemClock.uptimeMillis() - startTime;
-
-                        /**
-                         * The result from the OpenCV-SIFT detector is in a pair of Path and RectF,
-                         * for the cropped image and the overlay box respectively.
-                         */
-                        final Pair<Path, RectF> CvResult = cvDetector.imageDetector(croppedBitmap);
-                        lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
 
                         cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
                         final Canvas canvas = new Canvas(cropCopyBitmap);
@@ -350,33 +342,88 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
                                 break;
                         }
 
+                        // final list of recognitions before rendering ot the trackingOverlayView
                         final List<Classifier.Recognition> mappedRecognitions =
-                                new LinkedList<Classifier.Recognition>();
+                                new LinkedList<>();
 
-                        // This draws the bounding box for the detected object using OpenCV-SIFT.
-                        if (!CvResult.first.isEmpty()){
-                            canvas.drawPath(CvResult.first, paint);
-                            cropToFrameTransform.mapRect(CvResult.second);
-                            Classifier.Recognition cvDetection = new Classifier.Recognition(
-                                    "SIFT","UHU White Tack",minimumConfidence,CvResult.second);
-                            mappedRecognitions.add(cvDetection);
-                        }
+                        LOGGER.i("Running detection on image " + currTimestamp);
+                        final long startTime = SystemClock.uptimeMillis();
 
-                        for (final Classifier.Recognition result : results) {
-                            final RectF location = result.getLocation();
-                            if (location != null && result.getConfidence() >= minimumConfidence) {
-                                canvas.drawRect(location, paint);
 
-                                // Just checking the values of the RectF.
-                                //LOGGER.i("Bounding box dimensions are left: " + String.valueOf(location.left) +
-                                //        " and bottom: " + String.valueOf(location.bottom));
+                        // This for-loop below performs *detection* AND *transformation* for each
+                        // concurrent app that's running.
 
-                                cropToFrameTransform.mapRect(location);
-                                result.setLocation(location);
-                                mappedRecognitions.add(result);
+                        //detection: TF, then CV
+                        List<Classifier.Recognition> tfResults = detector.recognizeImage(croppedBitmap);
+                        CvDetector.Recognition cvResult = cvDetector.imageDetector(croppedBitmap);
+
+                        long detectionTime = SystemClock.uptimeMillis() - startTime;
+
+                        for (final AppRandomizer.App app : appList) {
+
+                            /*if (tfResults.isEmpty()) {
+                                tfResults = detector.recognizeImage(croppedBitmap);
+                            }
+
+                            if (cvResult.getTitle() == "") {
+                                cvResult = cvDetector.imageDetector(croppedBitmap);
+                            }*/
+
+                            //getting objects of Interest of an app
+                            List<String> objectsOfInterest = Arrays.asList(app.getObjectsOfInterest());
+
+                            switch (app.getMethod()) {
+                                case "TF_DETECTOR":
+                                    //transformation
+                                    for (final Classifier.Recognition dResult : tfResults) {
+                                        final RectF location = dResult.getLocation();
+                                        if (location != null && dResult.getConfidence() >= minimumConfidence) {
+                                            canvas.drawRect(location, paint);
+                                            if (!objectsOfInterest.contains(dResult.getTitle())){
+                                                break; //Don't overlay if not seen.
+                                            }
+                                            cropToFrameTransform.mapRect(location);
+                                            dResult.setLocation(location);
+                                            mappedRecognitions.add(dResult);
+
+                                            // Add these MrObject/s in the 'live' MrObjects list.
+                                        }
+                                    }
+
+                                    break;
+                                case "CV_DETECTOR":
+                                    cvResult.setTitle(app.getName());
+
+                                    //transformation
+                                    canvas.drawPath(cvResult.getLocation().first,paint);
+                                    cropToFrameTransform.mapRect(cvResult.getLocation().second);
+                                    Classifier.Recognition cvDetection = new Classifier.Recognition(
+                                            "SIFT",cvResult.getTitle(),minimumConfidence,cvResult.getLocation().second);
+                                    mappedRecognitions.add(cvDetection);
+
+                                    break;
+                                case "TF_CLASSIFFIER":
+                                    //transformation
+                                    for (final Classifier.Recognition cResult : tfResults) {
+                                        final RectF location = cResult.getLocation();
+                                        if (location != null && cResult.getConfidence() >= minimumConfidence) {
+                                            canvas.drawRect(location, paint);
+                                            if (!objectsOfInterest.contains(cResult.getTitle())){
+                                                break; //Don't overlay if not seen.
+                                            }
+                                            cropToFrameTransform.mapRect(location);
+                                            cResult.setLocation(location);
+                                            mappedRecognitions.add(cResult);
+                                        }
+                                    }
+
+                                    break;
                             }
                         }
 
+                        lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
+
+                        // pretty much rendering
                         tracker.trackResults(mappedRecognitions, luminanceCopy, currTimestamp);
                         augmenter.trackResults(mappedRecognitions, luminanceCopy, currTimestamp);
                         trackingOverlay.postInvalidate();
@@ -384,14 +431,13 @@ public class OpenCvDetectorActivity extends CameraActivity implements OnImageAva
                         requestRender();
                         computingDetection = false;
 
-                        LOGGER.i("TF detection: %d ms, OpenCV: %d ms" +
-                                " and overall frame processing %d ms.", tfToCvTime,
-                                lastProcessingTimeMs - tfToCvTime,
-                                SystemClock.uptimeMillis() - startTime);
-
+                        LOGGER.i("Detection time %d ms, overall frame processing %d ms.",
+                                detectionTime,SystemClock.uptimeMillis() - startTime);
                     }
                 });
+
     }
+
 
     @Override
     protected int getLayoutId() {

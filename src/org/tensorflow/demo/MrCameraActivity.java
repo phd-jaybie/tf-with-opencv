@@ -35,13 +35,13 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Trace;
-import android.util.Log;
 import android.util.Size;
 import android.view.KeyEvent;
 import android.view.Surface;
 import android.view.WindowManager;
 import android.widget.Toast;
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
@@ -51,9 +51,10 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.xfeatures2d.SIFT;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
-import org.tensorflow.demo.R; // Explicit import needed for internal Google builds.
+import org.tensorflow.demo.simulator.AppRandomizer;
+import org.tensorflow.demo.simulator.Randomizer;
 
-public abstract class CameraActivity extends Activity
+public abstract class MrCameraActivity extends Activity
     implements OnImageAvailableListener, Camera.PreviewCallback {
   private static final Logger LOGGER = new Logger();
 
@@ -92,6 +93,11 @@ public abstract class CameraActivity extends Activity
     }
   }
 
+  // Below are the global variables and configurations for the simulated experiment.
+  private final int numberOfApps = 10;
+  private Randomizer randomizer;
+  public List<AppRandomizer.App> appList;
+
   @Override
   protected void onCreate(final Bundle savedInstanceState) {
     LOGGER.d("onCreate " + this);
@@ -117,7 +123,7 @@ public abstract class CameraActivity extends Activity
                 objImageMat = new Mat();
 
                 try {
-                  objImageMat = Utils.loadResource(CameraActivity.this, R.drawable.train, Imgcodecs.CV_LOAD_IMAGE_COLOR);
+                  objImageMat = Utils.loadResource(MrCameraActivity.this, R.drawable.train, Imgcodecs.CV_LOAD_IMAGE_COLOR);
                   SIFT mFeatureDetector = SIFT.create();
 
                   LOGGER.i("Height: " + Integer.toString(objImageMat.height())
@@ -135,6 +141,18 @@ public abstract class CameraActivity extends Activity
 
               }
             });
+
+    /**
+     * The set of code below are for the app simulator which will randomly create a list of apps
+     * running concurrently and needs access to detection facilities emulated in processImage().
+     */
+    randomizer = AppRandomizer.create();
+    appList = randomizer.appGenerator(numberOfApps);
+    String appLogMessage = "";
+    for (AppRandomizer.App app: appList) {
+       appLogMessage = appLogMessage + ", " +app.getName();
+    }
+    LOGGER.i(appLogMessage);
 
   }
 
@@ -359,7 +377,7 @@ public abstract class CameraActivity extends Activity
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       if (shouldShowRequestPermissionRationale(PERMISSION_CAMERA) ||
           shouldShowRequestPermissionRationale(PERMISSION_STORAGE)) {
-        Toast.makeText(CameraActivity.this,
+        Toast.makeText(MrCameraActivity.this,
             "Camera AND storage permission are required for this demo", Toast.LENGTH_LONG).show();
       }
       requestPermissions(new String[] {PERMISSION_CAMERA, PERMISSION_STORAGE}, PERMISSIONS_REQUEST);
@@ -424,7 +442,7 @@ public abstract class CameraActivity extends Activity
                 public void onPreviewSizeChosen(final Size size, final int rotation) {
                   previewHeight = size.getHeight();
                   previewWidth = size.getWidth();
-                  CameraActivity.this.onPreviewSizeChosen(size, rotation);
+                  MrCameraActivity.this.onPreviewSizeChosen(size, rotation);
                 }
               },
               this,

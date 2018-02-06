@@ -54,13 +54,12 @@ import org.tensorflow.demo.OverlayView.DrawCallback;
 import org.tensorflow.demo.env.BorderedText;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
-import org.tensorflow.demo.R; // Explicit import needed for internal Google builds.
 
 /**
  * Sample activity that stylizes the camera preview according to "A Learned Representation For
  * Artistic Style" (https://arxiv.org/abs/1610.07629)
  */
-public class StylizeActivity extends CameraActivity implements OnImageAvailableListener {
+public class StylizeActivity extends MrCameraActivity implements OnImageAvailableListener {
   private static final Logger LOGGER = new Logger();
 
   private static final String MODEL_FILE = "file:///android_asset/stylize_quantized.pb";

@@ -44,7 +44,7 @@ public class OverlayView extends View {
   }
 
   /**
-   * Just reiterating, the canvas here IS the view, i.e. the OverlayView opbject. Unlike a normal
+   * Just reiterating, the canvas here IS the view, i.e. the OverlayView object. Unlike a normal
    * Canvas operation in which you would use a bitmap (check Canvas definition).
    */
   @Override

@@ -1,4 +1,4 @@
-package augmenting;
+package org.tensorflow.demo.augmenting;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -6,8 +6,6 @@ import android.graphics.RectF;
 
 import org.tensorflow.demo.Classifier;
 import org.tensorflow.demo.env.Logger;
-import org.tensorflow.demo.tracking.MultiBoxTracker;
-import org.tensorflow.demo.tracking.ObjectTracker;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -28,7 +26,6 @@ public class Augmenter {
     }
 
     private final List<TrackedRecognition> trackedObjects = new LinkedList<TrackedRecognition>();
-
 
     private Context context;
 
