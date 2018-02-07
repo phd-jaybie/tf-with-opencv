@@ -30,19 +30,23 @@ import org.tensorflow.demo.Classifier;
 import org.tensorflow.demo.OverlayView;
 import org.tensorflow.demo.OverlayView.DrawCallback;
 import org.tensorflow.demo.R;
+import org.tensorflow.demo.TensorFlowImageClassifier;
 import org.tensorflow.demo.TensorFlowMultiBoxDetector;
 import org.tensorflow.demo.TensorFlowObjectDetectionAPIModel;
 import org.tensorflow.demo.TensorFlowYoloDetector;
 import org.tensorflow.demo.augmenting.Augmenter;
-import org.tensorflow.demo.cv.CvDetector;
-import org.tensorflow.demo.cv.SiftDetector;
+import org.tensorflow.demo.phd.detector.cv.CvDetector;
+import org.tensorflow.demo.phd.detector.cv.OrbDetector;
+import org.tensorflow.demo.phd.detector.cv.SiftDetector;
 import org.tensorflow.demo.env.BorderedText;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
+import org.tensorflow.demo.simulator.App;
 import org.tensorflow.demo.simulator.AppRandomizer;
 import org.tensorflow.demo.tracking.MultiBoxTracker;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -97,6 +101,17 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
 
     private static final boolean MAINTAIN_ASPECT = MODE == DetectorMode.YOLO;
 
+    // Configuration values for the regular non-boxing classifier.
+    private static final int INPUT_SIZE = 224;
+    private static final int IMAGE_MEAN = 117;
+    private static final float IMAGE_STD = 1;
+    private static final String INPUT_NAME = "input";
+    private static final String OUTPUT_NAME = "output";
+
+    private static final String MODEL_FILE = "file:///android_asset/tensorflow_inception_graph.pb";
+    private static final String LABEL_FILE =
+            "file:///android_asset/imagenet_comp_graph_label_strings.txt";
+
     private static final Size DESIRED_PREVIEW_SIZE = new Size(640, 480);
 
     private static final boolean SAVE_PREVIEW_BITMAP = false;
@@ -105,8 +120,9 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
     private Integer sensorOrientation;
 
     private Classifier detector; //for TF detection
-    //private Classifier classifier; //for TF classification
-    private SiftDetector cvDetector; //for OpenCV detection
+    private Classifier classifier; //for TF classification
+    private SiftDetector siftDetector; //for OpenCV detection
+    private OrbDetector orbDetector;
 
     private long lastProcessingTimeMs;
     private Bitmap rgbFrameBitmap = null;
@@ -143,10 +159,10 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
 
         tracker = new MultiBoxTracker(this);
         augmenter = new Augmenter();
-        manager = new MrObjectManager();
 
+        // setting up a TF detector (a TF OD type)
         int cropSize = TF_OD_API_INPUT_SIZE;
-        if (MODE == DetectorMode.YOLO) {
+        if (MODE == ProtectedMrDetectorActivity.DetectorMode.YOLO) {
             detector =
                     TensorFlowYoloDetector.create(
                             getAssets(),
@@ -156,7 +172,7 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                             YOLO_OUTPUT_NAMES,
                             YOLO_BLOCK_SIZE);
             cropSize = YOLO_INPUT_SIZE;
-        } else if (MODE == DetectorMode.MULTIBOX) {
+        } else if (MODE == ProtectedMrDetectorActivity.DetectorMode.MULTIBOX) {
             detector =
                     TensorFlowMultiBoxDetector.create(
                             getAssets(),
@@ -171,7 +187,10 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
         } else {
             try {
                 detector = TensorFlowObjectDetectionAPIModel.create(
-                        getAssets(), TF_OD_API_MODEL_FILE, TF_OD_API_LABELS_FILE, TF_OD_API_INPUT_SIZE);
+                        getAssets(),
+                        TF_OD_API_MODEL_FILE,
+                        TF_OD_API_LABELS_FILE,
+                        TF_OD_API_INPUT_SIZE);
                 cropSize = TF_OD_API_INPUT_SIZE;
             } catch (final IOException e) {
                 LOGGER.e("Exception initializing classifier!", e);
@@ -183,10 +202,23 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
             }
         }
 
+        // setting up a TF classifier
+        classifier =
+                TensorFlowImageClassifier.create(
+                        getAssets(),
+                        MODEL_FILE,
+                        LABEL_FILE,
+                        INPUT_SIZE,
+                        IMAGE_MEAN,
+                        IMAGE_STD,
+                        INPUT_NAME,
+                        OUTPUT_NAME);
+
         /**
          * Inserted the line below for the OpenCV Detector.
          */
-        cvDetector = SiftDetector.create();
+        siftDetector = new SiftDetector();
+        orbDetector = new OrbDetector();
 
         previewWidth = size.getWidth();
         previewHeight = size.getHeight();
@@ -230,9 +262,7 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                     public void drawCallback(final Canvas canvas) {
                         //if (!isDebug()) {
                         //    return;
-                        //} commented this out so that even in non-debug, the following info below
-                        // are displayed.
-
+                        //}
                         final Bitmap copy = cropCopyBitmap;
                         if (copy == null) {
                             return;
@@ -361,13 +391,24 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                         // This for-loop below performs *detection* AND *transformation* for each
                         // concurrent app that's running.
 
-                        //detection: TF, then CV
-                        List<Classifier.Recognition> tfResults = detector.recognizeImage(croppedBitmap);
-                        CvDetector.Recognition cvResult = cvDetector.imageDetector(croppedBitmap);
+                        //detection: TF and CV
+                        List<Classifier.Recognition> dResults = new ArrayList<>();
+                        List<Classifier.Recognition> cResults = new ArrayList<>();
+                        CvDetector.QueryImage sResult = new CvDetector.QueryImage();
+                        CvDetector.QueryImage oResult = new CvDetector.QueryImage();
+                        if (appListText.contains("MULTIBOX")) {
+                            dResults = detector.recognizeImage(croppedBitmap);
+                        } else if (appListText.contains("CLASSIFIER")) {
+                            cResults = classifier.recognizeImage(croppedBitmap);
+                        } else if (appListText.contains("SIFT")) {
+                            sResult = siftDetector.imageDetector(croppedBitmap);
+                        } else if (appListText.contains("ORB")) {
+                            oResult = orbDetector.imageDetector(croppedBitmap);
+                        }
 
                         long detectionTime = SystemClock.uptimeMillis() - startTime;
 
-                        for (final AppRandomizer.App app : appList) {
+                        for (final App app : appList) {
 
                             /*if (tfResults.isEmpty()) {
                                 tfResults = detector.recognizeImage(croppedBitmap);
@@ -380,57 +421,76 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                             //getting objects of Interest of an app
                             List<String> objectsOfInterest = Arrays.asList(app.getObjectsOfInterest());
 
-                            switch (app.getMethod()) {
-                                case "TF_DETECTOR":
-                                    //transformation
-                                    for (final Classifier.Recognition dResult : tfResults) {
-                                        final RectF location = dResult.getLocation();
-                                        if (location != null && dResult.getConfidence() >= minimumConfidence) {
-                                            canvas.drawRect(location, paint);
-                                            if (!objectsOfInterest.contains(dResult.getTitle())){
-                                                continue; //Don't overlay if not seen.
-                                            }
-                                            cropToFrameTransform.mapRect(location);
-                                            dResult.setLocation(location);
-                                            mappedRecognitions.add(dResult);
+                            final List<Classifier.Recognition> appResults =
+                                    new LinkedList<>(); // collection of results per app
 
-                                            //manager.processDetection(app, dResult);
-                                        }
+                            switch (app.getMethod().first) {
+                                case "TF_DETECTOR":
+
+                                    //transformation
+                                    switch (app.getMethod().second) {
+                                        case "MULTIBOX":
+                                            for (final Classifier.Recognition dResult : dResults) {
+                                                final RectF location = dResult.getLocation();
+                                                if (location != null && dResult.getConfidence() >= minimumConfidence) {
+                                                    canvas.drawRect(location, paint);
+                                                    if (!objectsOfInterest.contains(dResult.getTitle())){
+                                                        continue; //Don't overlay if not seen.
+                                                    }
+                                                    cropToFrameTransform.mapRect(location);
+                                                    dResult.setLocation(location);
+                                                    appResults.add(dResult);
+                                                }
+                                            }
+                                            break;
+                                        case "CLASSIFIER":
+                                            for (final Classifier.Recognition cResult : cResults) {
+                                                if (!objectsOfInterest.contains(cResult.getTitle())){
+                                                    continue; //Don't overlay if not seen.
+                                                }
+                                                appResults.add(cResult);
+                                            }
+
                                     }
 
                                     break;
                                 case "CV_DETECTOR":
-                                    cvResult.setTitle(app.getName());
+                                    CvDetector.Recognition result = new CvDetector.Recognition();
 
                                     //transformation
-                                    canvas.drawPath(cvResult.getLocation().first,paint);
-                                    cropToFrameTransform.mapRect(cvResult.getLocation().second);
-                                    Classifier.Recognition cvDetection = new Classifier.Recognition(
-                                            "SIFT",cvResult.getTitle(),minimumConfidence,cvResult.getLocation().second);
-                                    mappedRecognitions.add(cvDetection);
+                                    switch (app.getMethod().second) {
+                                        case "SIFT":
+                                            result = siftDetector.getTransformation(sResult, app.getReference());
+                                            result.setTitle(app.getName());
 
-                                    //manager.processDetection(app, cvResult);
+                                            break;
+                                        case "ORB":
+                                            result = orbDetector.getTransformation(oResult, app.getReference());
+                                            result.setTitle(app.getName());
 
-                                    break;
-                                case "TF_CLASSIFFIER":
-                                    //transformation
-                                    for (final Classifier.Recognition cResult : tfResults) {
-                                        final RectF location = cResult.getLocation();
-                                        if (location != null && cResult.getConfidence() >= minimumConfidence) {
-                                            canvas.drawRect(location, paint);
-                                            if (!objectsOfInterest.contains(cResult.getTitle())){
-                                                continue; //Don't overlay if not seen.
-                                            }
-                                            cropToFrameTransform.mapRect(location);
-                                            cResult.setLocation(location);
-                                            mappedRecognitions.add(cResult);
-
-                                            //manager.processDetection(app, cResult);
-                                        }
+                                            break;
                                     }
 
+                                    canvas.drawPath(result.getLocation().first, paint);
+                                    cropToFrameTransform.mapRect(result.getLocation().second);
+                                    Classifier.Recognition cvDetection = new Classifier.
+                                            Recognition(app.getMethod().second, result.getTitle(),
+                                            minimumConfidence, result.getLocation().second);
+                                    appResults.add(cvDetection);
+
                                     break;
+
                             }
+                            app.addCallback(
+                                    new App.AppCallback() {
+                                        @Override
+                                        public void appCallback() {
+                                            for (final Classifier.Recognition result: appResults) {
+                                                app.process(result, currTimestamp);
+                                            }
+                                        }
+                                    }
+                            );
                         }
 
                         lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;

@@ -1,7 +1,8 @@
 package org.tensorflow.demo.phd;
 
 import org.tensorflow.demo.Classifier;
-import org.tensorflow.demo.cv.CvDetector;
+import org.tensorflow.demo.phd.detector.cv.CvDetector;
+import org.tensorflow.demo.simulator.App;
 import org.tensorflow.demo.simulator.AppRandomizer;
 
 import java.util.ArrayList;
@@ -97,7 +98,7 @@ public class MrObjectManager {
         // while or those that are past their time to live.
     }
 
-    public void processDetection(AppRandomizer.App app, Classifier.Recognition object) {
+    public void processDetection(App app, Classifier.Recognition object) {
         // check user preferences of what is the supposed sensitivity of this object
         if (!userPermitted(app.getName(),object.getTitle())){
             // if app is not allowed to see this object type, return
@@ -112,7 +113,7 @@ public class MrObjectManager {
         addMrObject(new MrObject(MrObjects.size() + 1,object.getTitle(),permissions,privacyLabel));
     }
 
-    public void processDetection(AppRandomizer.App app, CvDetector.Recognition object) {
+    public void processDetection(App app, CvDetector.Recognition object) {
         // check user preferences of what is the supposed sensitivity of this object
         if (!userPermitted(app.getName(),object.getTitle())){
             // if app is not allowed to see this object type, return

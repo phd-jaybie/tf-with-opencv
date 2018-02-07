@@ -67,7 +67,7 @@ public class TensorFlowYoloDetector implements Classifier {
     "pottedplant",
     "sheep",
     "sofa",
-    "train",
+    "uhu",
     "tvmonitor"
   };
 

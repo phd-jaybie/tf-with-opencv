@@ -1,10 +1,23 @@
 package org.tensorflow.demo.simulator;
 
-import android.graphics.Bitmap;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
+import android.util.Pair;
 
+import org.opencv.android.Utils;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfKeyPoint;
+import org.opencv.features2d.ORB;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.xfeatures2d.SIFT;
 import org.tensorflow.demo.Classifier;
+import org.tensorflow.demo.OverlayView;
+import org.tensorflow.demo.R;
+import org.tensorflow.demo.env.Logger;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
@@ -14,8 +27,19 @@ import java.util.Random;
 
 public class AppRandomizer implements Randomizer {
 
-    static final String[] methods = new String[]
-            {"TF_DETECTOR","CV_DETECTOR","TF_CLASSIFIER"};
+    private static final Logger LOGGER = new Logger();
+
+    static final String[] firstMethod = new String[]
+            {"TF_DETECTOR","CV_DETECTOR"};
+
+    static final String[] cvMethod = new String[]
+            {"SIFT","ORB"};
+
+    static final String[] tfMethod = new String[]
+            {"MULTIBOX","CLASSIFIER"};
+
+    static final Integer[] drawables = new Integer[]
+            {R.drawable.csiro, R.drawable.data61, R.drawable.uhu, R.drawable.unsw};
 
     static final String[][] objects = new String[][]
             {
@@ -23,7 +47,7 @@ public class AppRandomizer implements Randomizer {
                             "book"}, //office objects
                     {"person", "bed", "toilet", "laptop", "mouse","keyboard",
                             "cell phone"}, //high sensitivity objects
-                    {"bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign",
+                    {"bus", "uhu", "truck", "boat", "traffic light", "fire hydrant", "stop sign",
                             "parking meter","bench"}, //outside objects
                     {"bird", "cat", "dog", "horse", "sheep","cow","elephant","bear","zebra",
                             "giraffe"}, //animal objects
@@ -37,62 +61,111 @@ public class AppRandomizer implements Randomizer {
                             "cake", "chair","couch", "dining table"}, //kitchen or food objects
             };
 
-    public class App{
-        private final int id;
-        private final String name;
-        private String method;
-        private final String[] objectsOfInterest;
+    public class ReferenceImage {
+        private Mat RefImageMat;
+        private MatOfKeyPoint RefKeyPoints;
+        private Mat RefDescriptors;
 
-        public App(int id, String name, String method, String[] objects) {
-            this.id = id;
-            this.name = name;
-            this.method = method;
-            this.objectsOfInterest = objects;
+        public Mat getRefImageMat() {
+            return RefImageMat;
         }
 
-        public int getId() {
-            return id;
+        public MatOfKeyPoint getRefKeyPoints() {
+            return RefKeyPoints;
         }
 
-        public String getMethod() {
-            return method;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String[] getObjectsOfInterest() {
-            return objectsOfInterest;
-        }
-
-        public void setMethod(String method) {
-            this.method = method;
-        }
-
-        public List<Classifier.Recognition> tfDetector(Bitmap bitmap, Classifier detector){
-            List<Classifier.Recognition> results = detector.recognizeImage(bitmap);
-            return results;
+        public Mat getRefDescriptors() {
+            return RefDescriptors;
         }
     }
 
     public static Randomizer create(){
-        final AppRandomizer appRandomizer = new AppRandomizer();
-        return appRandomizer;
+        return new AppRandomizer();
     }
 
-    public List<App> appGenerator(int numberOfApps){
+    public List<App> appGenerator(Context context, int numberOfApps){
         Random rnd = new Random();
         final List<App> appList = new ArrayList<>(numberOfApps);
 
         for (int i = 0; i < numberOfApps ; i++){
-            String method = methods[rnd.nextInt(methods.length)];
+            Integer first = rnd.nextInt(firstMethod.length);
+            String secondMethod;
+            ReferenceImage reference = new ReferenceImage();
+            if (first == 0) {
+                secondMethod = tfMethod[rnd.nextInt(tfMethod.length)];
+            } else {
+                secondMethod = cvMethod[rnd.nextInt(cvMethod.length)];
+                //secondMethod = "SIFT"; // always uses SIFT.
+                reference = cvReferenceImage(context, secondMethod);
+            }
+            Pair<String,String> method = new Pair<>(firstMethod[first],secondMethod);
             String[] objectsOfInterest = objects[rnd.nextInt(objects.length)];
-            String name = method + "_" + Integer.toString(i);
-            App app = new App(i,name,method,objectsOfInterest);
+            String name = method.first + method.second + "_" + Integer.toString(i);
+            App app = new App(i,name,method,objectsOfInterest,reference);
             appList.add(app);
         }
         return appList;
+    }
+
+    private ReferenceImage cvReferenceImage(Context context, String method) {
+        /** Extract the reference SIFT features */
+        final ReferenceImage reference = new ReferenceImage();
+
+        MatOfKeyPoint refKeyPoints = new MatOfKeyPoint();
+        Mat refDescriptors = new Mat();
+        Mat refImageMat;
+
+        Integer drawable = new Random().nextInt(drawables.length);
+
+        if (method == "SIFT") { // If the internal CV Method uses SIFT
+            try {
+                refImageMat = Utils.loadResource(context, drawable,
+                        Imgcodecs.CV_LOAD_IMAGE_COLOR);
+
+                SIFT mFeatureDetector = SIFT.create();
+
+                LOGGER.i("Using "+ method +", Height: " + Integer.toString(refImageMat.height())
+                        + ", Width: " + Integer.toString(refImageMat.width()));
+
+                long time = System.currentTimeMillis();
+
+                mFeatureDetector.detect(refImageMat, refKeyPoints);
+                mFeatureDetector.compute(refImageMat,refKeyPoints, refDescriptors);
+                LOGGER.i("Time to process " + (System.currentTimeMillis() - time) +
+                        ", Number of key points: " + refKeyPoints.toArray().length);
+
+                reference.RefImageMat = refImageMat;
+                reference.RefDescriptors = refDescriptors;
+                reference.RefKeyPoints = refKeyPoints;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else { // If the internal CV Method uses ORB
+            try {
+                refImageMat = Utils.loadResource(context, drawable,
+                        Imgcodecs.CV_LOAD_IMAGE_COLOR);
+
+                ORB mFeatureDetector = ORB.create();
+
+                LOGGER.i("Using " + method + ", Height: " + Integer.toString(refImageMat.height())
+                        + ", Width: " + Integer.toString(refImageMat.width()));
+
+                long time = System.currentTimeMillis();
+
+                mFeatureDetector.detect(refImageMat, refKeyPoints);
+                mFeatureDetector.compute(refImageMat, refKeyPoints, refDescriptors);
+                LOGGER.i("Time to process " + (System.currentTimeMillis() - time) +
+                        ", Number of key points: " + refKeyPoints.toArray().length);
+
+                reference.RefImageMat = refImageMat;
+                reference.RefDescriptors = refDescriptors;
+                reference.RefKeyPoints = refKeyPoints;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return reference;
     }
 
 }

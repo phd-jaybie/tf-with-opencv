@@ -1,4 +1,4 @@
-package org.tensorflow.demo.cv;
+package org.tensorflow.demo.phd.detector.cv;
 
 /**
  * Created by deg032 on 1/2/18.
@@ -20,10 +20,13 @@ import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
+import org.opencv.features2d.BFMatcher;
 import org.opencv.features2d.FlannBasedMatcher;
+import org.opencv.features2d.ORB;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.xfeatures2d.SIFT;
 import org.tensorflow.demo.env.Logger;
+import org.tensorflow.demo.simulator.AppRandomizer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,24 +34,21 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import static org.opencv.core.Core.NORM_HAMMING;
 import static org.tensorflow.demo.MrCameraActivity.MIN_MATCH_COUNT;
-import static org.tensorflow.demo.MrCameraActivity.mRefDescriptors;
-import static org.tensorflow.demo.MrCameraActivity.mRefKeyPoints;
-import static org.tensorflow.demo.MrCameraActivity.objImageMat;
 
-public class SiftDetector implements CvDetector{
+public class OrbDetector implements CvDetector{
     private static final Logger LOGGER = new Logger();
 
-    public static SiftDetector create() {
-        final SiftDetector detector = new SiftDetector();
+    public static OrbDetector create() {
+        final OrbDetector detector = new OrbDetector();
         return detector;
     }
 
     @Override
-    public Recognition imageDetector(Bitmap bitmap){
+    public QueryImage imageDetector(Bitmap bitmap){
 
-        ArrayList<org.opencv.core.Point> scenePoints = new ArrayList<>();
-        final SIFT mFeatureDetector = SIFT.create();
+        final ORB mFeatureDetector = ORB.create();
         final MatOfKeyPoint mKeyPoints = new MatOfKeyPoint();
         final Mat mDescriptors = new Mat();
 
@@ -72,8 +72,24 @@ public class SiftDetector implements CvDetector{
         } /**finally
          } */
 
-        if (0 != mKeyPoints.toArray().length) {
-            scenePoints = ImageMatcher(mKeyPoints, mDescriptors);
+        final QueryImage query = new QueryImage();
+        query.QryImageMat = mat;
+        query.QryDescriptors = mDescriptors;
+        query.QryKeyPoints = mKeyPoints;
+
+        return query;
+    }
+
+    @Override
+    public Recognition imageDetector(Bitmap bitmap, AppRandomizer.ReferenceImage reference) {
+
+        final QueryImage query = imageDetector(bitmap);
+        ArrayList<org.opencv.core.Point> scenePoints = new ArrayList<>();
+
+        MatOfKeyPoint keypoints = query.QryKeyPoints;
+
+        if (0 != keypoints.toArray().length) {
+            scenePoints = imageMatcher(query, reference);
             //Imgproc.drawContours(mat, scenePoints, 0, new Scalar(255, 0, 0), 3);
             // for using the draw contours again, please change scenePoints from
             // ArrayList<Point> to List<MatOfPoint>, and change the ImageMatcher
@@ -115,13 +131,25 @@ public class SiftDetector implements CvDetector{
         return new Recognition("",Pair.create(path, location));
     }
 
-    private ArrayList<Point> ImageMatcher(MatOfKeyPoint keyPoints, Mat descriptors){
+    // For ORB, we sue BFMatcher.
+    private ArrayList<Point> imageMatcher(QueryImage queryImage, AppRandomizer.ReferenceImage reference){
 
         ArrayList<org.opencv.core.Point> points = new ArrayList<>();
         List<MatOfPoint> mScenePoints = new ArrayList<>();
         List<MatOfDMatch> matches = new ArrayList<>();
-        FlannBasedMatcher descriptorMatcher = FlannBasedMatcher.create();
-        descriptorMatcher.knnMatch(mRefDescriptors, descriptors, matches, 2);
+
+        BFMatcher descriptorMatcher = BFMatcher.create(NORM_HAMMING,true);
+
+        Mat refImage = reference.getRefImageMat();
+        Mat qryImage = queryImage.QryImageMat;
+
+        Mat refDescriptors = reference.getRefDescriptors();
+        Mat qryDescriptors = queryImage.QryDescriptors;
+
+        MatOfKeyPoint refKeypoints = reference.getRefKeyPoints();
+        MatOfKeyPoint qryKeypoints = queryImage.QryKeyPoints;
+
+        descriptorMatcher.knnMatch(refDescriptors, qryDescriptors, matches, 2);
 
         long time = System.currentTimeMillis();
 
@@ -129,20 +157,24 @@ public class SiftDetector implements CvDetector{
         LinkedList<DMatch> good_matches = new LinkedList<>();
         for (Iterator<MatOfDMatch> iterator = matches.iterator(); iterator.hasNext();) {
             MatOfDMatch matOfDMatch = iterator.next();
-            if (matOfDMatch.toArray()[0].distance / matOfDMatch.toArray()[1].distance < 0.75) {
+            if (matOfDMatch.toArray()[0].distance / matOfDMatch.toArray()[1].distance < 0.60) {
                 good_matches.add(matOfDMatch.toArray()[0]);
             }
         }
 
         long time1 = System.currentTimeMillis();
 
-        if (good_matches.size()>MIN_MATCH_COUNT){
-            /** get keypoint coordinates of good matches to find homography and remove outliers using ransac */
+        if (good_matches.size() > MIN_MATCH_COUNT){
+
+            /** get keypoint coordinates of good matches to find homography and remove outliers
+             * using ransac */
+            /** Also, always remember that this is already a transformation process. */
+
             List<org.opencv.core.Point> refPoints = new ArrayList<>();
             List<org.opencv.core.Point> mPoints = new ArrayList<>();
             for(int i = 0; i<good_matches.size(); i++){
-                refPoints.add(mRefKeyPoints.toList().get(good_matches.get(i).queryIdx).pt);
-                mPoints.add(keyPoints.toList().get(good_matches.get(i).trainIdx).pt);
+                refPoints.add(refKeypoints.toList().get(good_matches.get(i).queryIdx).pt);
+                mPoints.add(qryKeypoints.toList().get(good_matches.get(i).trainIdx).pt);
             }
             // convertion of data types - there is maybe a more beautiful way
             Mat outputMask = new Mat();
@@ -155,9 +187,9 @@ public class SiftDetector implements CvDetector{
             Mat scene_corners = new Mat(4,1,CvType.CV_32FC2);
 
             obj_corners.put(0, 0, new double[] {0,0});
-            obj_corners.put(1, 0, new double[] {objImageMat.width()-1,0});
-            obj_corners.put(2, 0, new double[] {objImageMat.width()-1,objImageMat.height()-1});
-            obj_corners.put(3, 0, new double[] {0,objImageMat.height()-1});
+            obj_corners.put(1, 0, new double[] {refImage.width()-1,0});
+            obj_corners.put(2, 0, new double[] {refImage.width()-1,refImage.height()-1});
+            obj_corners.put(3, 0, new double[] {0,refImage.height()-1});
 
             // Find homography - here just used to perform match filtering with RANSAC, but could be used to e.g. stitch images
             // the smaller the allowed reprojection error (here 15), the more matches are filtered
@@ -179,9 +211,13 @@ public class SiftDetector implements CvDetector{
                         + " (" + Integer.toString(MIN_MATCH_COUNT) + ")"
                         + ", Time to transform: " + Long.toString((System.currentTimeMillis() - time1)));
             } else {
+                // Transformation is too small or skewed, object probably not in view, or matching
+                // error.
                 LOGGER.i( "Time to Match: " + Long.toString((time1 - time))
                         + ", Object probably not in view even with " + good_matches.size()
                         + " (" + Integer.toString(MIN_MATCH_COUNT) + ") matches.");
+
+                return null;
             }
             //result = "Enough matches.";
         } else {
@@ -189,9 +225,50 @@ public class SiftDetector implements CvDetector{
                     + ", Not Enough Matches (" + good_matches.size()
                     + "/" + Integer.toString(MIN_MATCH_COUNT) + ")");
             //result = "Not enough matches.";
+            return null;
         }
 
         return points; //mScenePoints; for using drawContours
+    }
+
+    // This is a method that just does Matching and returns a Path/RectF if there is a match.
+    @Override
+        public Recognition getTransformation(QueryImage queryImage,
+                AppRandomizer.ReferenceImage reference) {
+
+        ArrayList<org.opencv.core.Point> scenePoints = imageMatcher(queryImage, reference);
+
+        /**
+         * Using path to draw a transformed bounding box.
+         */
+        final Path path = new Path();
+        if (!scenePoints.isEmpty()) {
+            path.moveTo((float) scenePoints.get(0).x, (float) scenePoints.get(0).y);
+            path.lineTo((float) scenePoints.get(1).x, (float) scenePoints.get(1).y);
+            path.lineTo((float) scenePoints.get(2).x, (float) scenePoints.get(2).y);
+            path.lineTo((float) scenePoints.get(3).x, (float) scenePoints.get(3).y);
+            path.close();
+        }
+
+        /**
+         * Using RectF to draw a fixed rectangle bounding box.
+         */
+        final RectF location = new RectF();
+        if (!scenePoints.isEmpty()) {
+            float[] xValues = {(float) scenePoints.get(0).x,
+                    (float) scenePoints.get(1).x,
+                    (float) scenePoints.get(2).x,
+                    (float) scenePoints.get(3).x};
+            float[] yValues = {(float) scenePoints.get(0).y,
+                    (float) scenePoints.get(1).y,
+                    (float) scenePoints.get(2).y,
+                    (float) scenePoints.get(3).y};
+            Arrays.sort(xValues);
+            Arrays.sort(yValues);
+            location.set(xValues[0], yValues[0], xValues[3], yValues[3]);
+        }
+
+        return new Recognition("",Pair.create(path, location));
     }
 
 }

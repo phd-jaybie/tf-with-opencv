@@ -1,5 +1,6 @@
 package org.tensorflow.demo.simulator;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 
 import org.tensorflow.demo.Classifier;
@@ -15,6 +16,8 @@ import java.util.Random;
 
 public interface Randomizer {
 
-    List<AppRandomizer.App> appGenerator(int numberOfApps);
+    List<App> appGenerator(Context context, int numberOfApps);
+
+    //List<User> userGenerator(int numberOfUsers);
 
 }

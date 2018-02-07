@@ -52,12 +52,15 @@ import org.opencv.xfeatures2d.SIFT;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.phd.MrObjectManager;
+import org.tensorflow.demo.simulator.App;
 import org.tensorflow.demo.simulator.AppRandomizer;
 import org.tensorflow.demo.simulator.Randomizer;
 
 public abstract class MrCameraActivity extends Activity
     implements OnImageAvailableListener, Camera.PreviewCallback {
   private static final Logger LOGGER = new Logger();
+
+  protected String appListText;
 
   private static final int PERMISSIONS_REQUEST = 1;
 
@@ -85,9 +88,6 @@ public abstract class MrCameraActivity extends Activity
 
   // Global values and containers for detection using OpenCV.
   public static Integer MIN_MATCH_COUNT = 30;
-  public static Mat objImageMat;
-  public static MatOfKeyPoint mRefKeyPoints;
-  public static Mat mRefDescriptors;
 
   static {
     if(!OpenCVLoader.initDebug()){
@@ -100,7 +100,7 @@ public abstract class MrCameraActivity extends Activity
   // Below are the global variables and configurations for the simulated experiment.
   private final int numberOfApps = 10;
   private Randomizer randomizer;
-  public List<AppRandomizer.App> appList;
+  public List<App> appList;
 
   @Override
   protected void onCreate(final Bundle savedInstanceState) {
@@ -117,46 +117,27 @@ public abstract class MrCameraActivity extends Activity
       requestPermission();
     }
 
-    /** Extract the reference SIFT features */
     handler.post(
             new Runnable() {
               @Override
               public void run() {
-                mRefKeyPoints = new MatOfKeyPoint();
-                mRefDescriptors = new Mat();
-                objImageMat = new Mat();
 
-                try {
-                  objImageMat = Utils.loadResource(MrCameraActivity.this, R.drawable.train, Imgcodecs.CV_LOAD_IMAGE_COLOR);
-                  SIFT mFeatureDetector = SIFT.create();
-
-                  LOGGER.i("Height: " + Integer.toString(objImageMat.height())
-                          + ", Width: " + Integer.toString(objImageMat.width()));
-
-                  long time = System.currentTimeMillis();
-
-                  mFeatureDetector.detect(objImageMat, mRefKeyPoints);
-                  mFeatureDetector.compute(objImageMat, mRefKeyPoints, mRefDescriptors);
-                  LOGGER.i("Time to process " + (System.currentTimeMillis() - time) +
-                          ", Number of key points: " + mRefKeyPoints.toArray().length);
-                } catch (Exception e) {
-                  e.printStackTrace();
+                /**
+                 * The set of code below are for the app simulator which will randomly create a list of apps
+                 * running concurrently and needs access to detection facilities emulated in processImage().
+                 */
+                randomizer = AppRandomizer.create();
+                appList = randomizer.appGenerator(MrCameraActivity.this, numberOfApps);
+                String appLogMessage = "";
+                for (App app: appList) {
+                  appLogMessage = appLogMessage + ", " + app.getName();
                 }
+                LOGGER.i(appLogMessage);
+                appListText = appLogMessage;
 
               }
             });
 
-    /**
-     * The set of code below are for the app simulator which will randomly create a list of apps
-     * running concurrently and needs access to detection facilities emulated in processImage().
-     */
-    randomizer = AppRandomizer.create();
-    appList = randomizer.appGenerator(numberOfApps);
-    String appLogMessage = "";
-    for (AppRandomizer.App app: appList) {
-       appLogMessage = appLogMessage + ", " +app.getName();
-    }
-    LOGGER.i(appLogMessage);
 
     // creating an instance of the MrObjectManager
     manager = new MrObjectManager();
