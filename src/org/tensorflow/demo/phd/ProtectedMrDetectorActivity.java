@@ -428,8 +428,8 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                                 case "TF_DETECTOR":
 
                                     //transformation
-                                    switch (app.getMethod().second) {
-                                        case "MULTIBOX":
+                                    /*switch (app.getMethod().second) {
+                                        case "MULTIBOX":*/
                                             for (final Classifier.Recognition dResult : dResults) {
                                                 final RectF location = dResult.getLocation();
                                                 if (location != null && dResult.getConfidence() >= minimumConfidence) {
@@ -442,6 +442,7 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                                                     appResults.add(dResult);
                                                 }
                                             }
+/*
                                             break;
                                         case "CLASSIFIER":
                                             for (final Classifier.Recognition cResult : cResults) {
@@ -452,6 +453,7 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                                             }
 
                                     }
+*/
 
                                     break;
                                 case "CV_DETECTOR":
@@ -461,15 +463,14 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                                     switch (app.getMethod().second) {
                                         case "SIFT":
                                             result = siftDetector.getTransformation(sResult, app.getReference());
-                                            result.setTitle(app.getName());
-
                                             break;
                                         case "ORB":
                                             result = orbDetector.getTransformation(oResult, app.getReference());
-                                            result.setTitle(app.getName());
-
                                             break;
                                     }
+                                    if (result == null) break;
+
+                                    result.setTitle(app.getName());
 
                                     canvas.drawPath(result.getLocation().first, paint);
                                     cropToFrameTransform.mapRect(result.getLocation().second);
@@ -499,7 +500,7 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                         tracker.trackResults(mappedRecognitions, luminanceCopy, currTimestamp);
                         augmenter.trackResults(luminanceCopy, currTimestamp);
                         trackingOverlay.postInvalidate();
-                        manager.refreshList();
+                        //manager.refreshList();
 
                         requestRender();
                         computingDetection = false;

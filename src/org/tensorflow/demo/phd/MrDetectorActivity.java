@@ -392,6 +392,8 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                         // supporting servers.
                         for (final App app : appList) {
 
+                            LOGGER.i("Doing app: " + app.toString());
+
                             final List<Classifier.Recognition> appResults =
                                     new LinkedList<>(); // collection of results per app
 
@@ -399,7 +401,7 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                                 case "TF_DETECTOR":
                                     List<Classifier.Recognition> results = new ArrayList<>();
 
-                                    switch (app.getMethod().second){
+                                    /*switch (app.getMethod().second){
                                         case "MULTIBOX":
                                             //detection
                                             results = detector.recognizeImage(croppedBitmap);
@@ -411,7 +413,9 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                                             results = classifier.recognizeImage(croppedBitmap);
 
                                             break;
-                                    }
+                                    }*/
+
+                                    results = detector.recognizeImage(croppedBitmap); // no classifier
 
                                     //transformation
                                     for (final Classifier.Recognition dResult : results) {
@@ -435,14 +439,14 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                                         case "SIFT":
                                             //detection
                                             result = siftDetector.imageDetector(croppedBitmap, app.getReference());
-
                                             break;
                                         case "ORB":
                                             //detection
                                             result = orbDetector.imageDetector(croppedBitmap, app.getReference());
-
                                             break;
                                     }
+
+                                    if (result == null) break;
 
                                     result.setTitle(app.getName());
 

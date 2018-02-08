@@ -60,8 +60,6 @@ public abstract class MrCameraActivity extends Activity
     implements OnImageAvailableListener, Camera.PreviewCallback {
   private static final Logger LOGGER = new Logger();
 
-  protected String appListText;
-
   private static final int PERMISSIONS_REQUEST = 1;
 
   private static final String PERMISSION_CAMERA = Manifest.permission.CAMERA;
@@ -100,9 +98,10 @@ public abstract class MrCameraActivity extends Activity
   // Below are the global variables and configurations for the simulated experiment.
   private final int numberOfApps = 10;
   private Randomizer randomizer;
-  public List<App> appList;
+  protected static List<App> appList;
+  protected static String appListText = "App List: ";
 
-  @Override
+    @Override
   protected void onCreate(final Bundle savedInstanceState) {
     LOGGER.d("onCreate " + this);
     super.onCreate(null);
@@ -117,30 +116,21 @@ public abstract class MrCameraActivity extends Activity
       requestPermission();
     }
 
-    handler.post(
-            new Runnable() {
-              @Override
-              public void run() {
+    if (appList == null){
+        LOGGER.i("Creating a new app list.");
+        randomizer = AppRandomizer.create();
+        appList = randomizer.appGenerator(getApplicationContext(), numberOfApps);
+    }
 
-                /**
-                 * The set of code below are for the app simulator which will randomly create a list of apps
-                 * running concurrently and needs access to detection facilities emulated in processImage().
-                 */
-                randomizer = AppRandomizer.create();
-                appList = randomizer.appGenerator(MrCameraActivity.this, numberOfApps);
-                String appLogMessage = "";
-                for (App app: appList) {
-                  appLogMessage = appLogMessage + ", " + app.getName();
-                }
-                LOGGER.i(appLogMessage);
-                appListText = appLogMessage;
+    String appLogMessage = "App list: ";
+    for (App app: appList) {
+        appLogMessage = appLogMessage + app.getName() + "\n";
+    }
+    LOGGER.i(appLogMessage);
+    appListText = appLogMessage;
 
-              }
-            });
-
-
-    // creating an instance of the MrObjectManager
-    manager = new MrObjectManager();
+      // creating an instance of the MrObjectManager
+    if (manager == null) manager = new MrObjectManager();
 
   }
 

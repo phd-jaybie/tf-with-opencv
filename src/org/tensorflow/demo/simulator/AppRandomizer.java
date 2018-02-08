@@ -77,6 +77,18 @@ public class AppRandomizer implements Randomizer {
         public Mat getRefDescriptors() {
             return RefDescriptors;
         }
+
+        public void setRefImageMat(Mat refImageMat) {
+            RefImageMat = refImageMat;
+        }
+
+        public void setRefDescriptors(Mat refDescriptors) {
+            RefDescriptors = refDescriptors;
+        }
+
+        public void setRefKeyPoints(MatOfKeyPoint refKeyPoints) {
+            RefKeyPoints = refKeyPoints;
+        }
     }
 
     public static Randomizer create(){
@@ -100,10 +112,11 @@ public class AppRandomizer implements Randomizer {
             }
             Pair<String,String> method = new Pair<>(firstMethod[first],secondMethod);
             String[] objectsOfInterest = objects[rnd.nextInt(objects.length)];
-            String name = method.first + method.second + "_" + Integer.toString(i);
+            String name = method.first + "_" + method.second + "_" + Integer.toString(i);
             App app = new App(i,name,method,objectsOfInterest,reference);
             appList.add(app);
         }
+
         return appList;
     }
 
@@ -113,9 +126,9 @@ public class AppRandomizer implements Randomizer {
 
         MatOfKeyPoint refKeyPoints = new MatOfKeyPoint();
         Mat refDescriptors = new Mat();
-        Mat refImageMat;
+        Mat refImageMat = new Mat();
 
-        Integer drawable = new Random().nextInt(drawables.length);
+        Integer drawable = drawables[new Random().nextInt(drawables.length)];
 
         if (method == "SIFT") { // If the internal CV Method uses SIFT
             try {
@@ -127,18 +140,11 @@ public class AppRandomizer implements Randomizer {
                 LOGGER.i("Using "+ method +", Height: " + Integer.toString(refImageMat.height())
                         + ", Width: " + Integer.toString(refImageMat.width()));
 
-                long time = System.currentTimeMillis();
-
                 mFeatureDetector.detect(refImageMat, refKeyPoints);
                 mFeatureDetector.compute(refImageMat,refKeyPoints, refDescriptors);
-                LOGGER.i("Time to process " + (System.currentTimeMillis() - time) +
-                        ", Number of key points: " + refKeyPoints.toArray().length);
-
-                reference.RefImageMat = refImageMat;
-                reference.RefDescriptors = refDescriptors;
-                reference.RefKeyPoints = refKeyPoints;
             } catch (Exception e) {
                 e.printStackTrace();
+                return null;
             }
         } else { // If the internal CV Method uses ORB
             try {
@@ -150,20 +156,23 @@ public class AppRandomizer implements Randomizer {
                 LOGGER.i("Using " + method + ", Height: " + Integer.toString(refImageMat.height())
                         + ", Width: " + Integer.toString(refImageMat.width()));
 
-                long time = System.currentTimeMillis();
-
                 mFeatureDetector.detect(refImageMat, refKeyPoints);
                 mFeatureDetector.compute(refImageMat, refKeyPoints, refDescriptors);
-                LOGGER.i("Time to process " + (System.currentTimeMillis() - time) +
-                        ", Number of key points: " + refKeyPoints.toArray().length);
 
-                reference.RefImageMat = refImageMat;
-                reference.RefDescriptors = refDescriptors;
-                reference.RefKeyPoints = refKeyPoints;
             } catch (Exception e) {
                 e.printStackTrace();
+                return null;
             }
         }
+
+        long time = System.currentTimeMillis();
+
+        LOGGER.i("Time to process " + (System.currentTimeMillis() - time) +
+                ", Number of key points: " + refKeyPoints.toArray().length);
+
+        reference.setRefImageMat(refImageMat);
+        reference.setRefDescriptors(refDescriptors);
+        reference.setRefKeyPoints(refKeyPoints);
 
         return reference;
     }

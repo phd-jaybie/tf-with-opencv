@@ -462,15 +462,16 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                                     switch (app.getMethod().second) {
                                         case "SIFT":
                                             result = siftDetector.getTransformation(sResult, app.getReference());
-                                            result.setTitle(app.getName());
 
                                             break;
                                         case "ORB":
                                             result = orbDetector.getTransformation(oResult, app.getReference());
-                                            result.setTitle(app.getName());
 
                                             break;
                                     }
+                                    if (result == null) break;
+
+                                    result.setTitle(app.getName());
 
                                     canvas.drawPath(result.getLocation().first, paint);
                                     cropToFrameTransform.mapRect(result.getLocation().second);

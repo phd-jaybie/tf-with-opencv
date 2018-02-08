@@ -70,4 +70,11 @@ public class App {
         // Each app can define their own appCallback methods.
     }
 
+    public String toString(){
+        String appString = Integer.toString(this.id);
+        appString = appString + this.name;
+        appString = appString + this.method;
+        return appString;
+    }
+
 }

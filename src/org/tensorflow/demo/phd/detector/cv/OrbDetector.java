@@ -35,6 +35,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static org.opencv.core.Core.NORM_HAMMING;
+import static org.opencv.core.Core.sumElems;
 import static org.tensorflow.demo.MrCameraActivity.MIN_MATCH_COUNT;
 
 public class OrbDetector implements CvDetector{
@@ -69,6 +70,7 @@ public class OrbDetector implements CvDetector{
         } catch (Exception e) {
             e.printStackTrace();
             LOGGER.d("Cannot process.");
+            return null;
         } /**finally
          } */
 
@@ -88,6 +90,14 @@ public class OrbDetector implements CvDetector{
 
         MatOfKeyPoint keypoints = query.QryKeyPoints;
 
+        if (reference.getRefDescriptors() == null) {
+            LOGGER.d("Reference descriptors are null");
+            return null;
+        } else if (query.QryDescriptors == null) {
+            LOGGER.d("Query descriptors are null");
+            return null;
+        }
+
         if (0 != keypoints.toArray().length) {
             scenePoints = imageMatcher(query, reference);
             //Imgproc.drawContours(mat, scenePoints, 0, new Scalar(255, 0, 0), 3);
@@ -96,25 +106,26 @@ public class OrbDetector implements CvDetector{
             // return value as well to List<MatOfPoint> type.
         } else {
             LOGGER.d("Cannot process: No key points");
+            return null;
         }
 
-        /**
-         * Using path to draw a transformed bounding box.
-         */
+
         final Path path = new Path();
-        if (!scenePoints.isEmpty()) {
+        final RectF location = new RectF();
+
+        if (scenePoints != null) {
+            /**
+             * Using path to draw a transformed bounding box.
+             */
             path.moveTo((float) scenePoints.get(0).x, (float) scenePoints.get(0).y);
             path.lineTo((float) scenePoints.get(1).x, (float) scenePoints.get(1).y);
             path.lineTo((float) scenePoints.get(2).x, (float) scenePoints.get(2).y);
             path.lineTo((float) scenePoints.get(3).x, (float) scenePoints.get(3).y);
             path.close();
-        }
 
-        /**
-         * Using RectF to draw a fixed rectangle bounding box.
-         */
-        final RectF location = new RectF();
-        if (!scenePoints.isEmpty()) {
+            /**
+             * Using RectF to draw a fixed rectangle bounding box.
+             */
             float[] xValues = {(float) scenePoints.get(0).x,
                     (float) scenePoints.get(1).x,
                     (float) scenePoints.get(2).x,
@@ -126,7 +137,7 @@ public class OrbDetector implements CvDetector{
             Arrays.sort(xValues);
             Arrays.sort(yValues);
             location.set(xValues[0], yValues[0], xValues[3], yValues[3]);
-        }
+        } else return null;
 
         return new Recognition("",Pair.create(path, location));
     }
@@ -138,7 +149,7 @@ public class OrbDetector implements CvDetector{
         List<MatOfPoint> mScenePoints = new ArrayList<>();
         List<MatOfDMatch> matches = new ArrayList<>();
 
-        BFMatcher descriptorMatcher = BFMatcher.create(NORM_HAMMING,true);
+        BFMatcher descriptorMatcher = BFMatcher.create(); //NORM_HAMMING,true);
 
         Mat refImage = reference.getRefImageMat();
         Mat qryImage = queryImage.QryImageMat;
@@ -149,82 +160,89 @@ public class OrbDetector implements CvDetector{
         MatOfKeyPoint refKeypoints = reference.getRefKeyPoints();
         MatOfKeyPoint qryKeypoints = queryImage.QryKeyPoints;
 
-        descriptorMatcher.knnMatch(refDescriptors, qryDescriptors, matches, 2);
+        try{
+            descriptorMatcher.knnMatch(refDescriptors, qryDescriptors, matches, 2);
 
-        long time = System.currentTimeMillis();
+            long time = System.currentTimeMillis();
 
-        // ratio test
-        LinkedList<DMatch> good_matches = new LinkedList<>();
-        for (Iterator<MatOfDMatch> iterator = matches.iterator(); iterator.hasNext();) {
-            MatOfDMatch matOfDMatch = iterator.next();
-            if (matOfDMatch.toArray()[0].distance / matOfDMatch.toArray()[1].distance < 0.60) {
-                good_matches.add(matOfDMatch.toArray()[0]);
+            // ratio test
+            LinkedList<DMatch> good_matches = new LinkedList<>();
+            for (Iterator<MatOfDMatch> iterator = matches.iterator(); iterator.hasNext();) {
+                MatOfDMatch matOfDMatch = iterator.next();
+                if (matOfDMatch.toArray()[0].distance / matOfDMatch.toArray()[1].distance < 0.75) {
+                    good_matches.add(matOfDMatch.toArray()[0]);
+                }
             }
-        }
 
-        long time1 = System.currentTimeMillis();
+            long time1 = System.currentTimeMillis();
 
-        if (good_matches.size() > MIN_MATCH_COUNT){
+            if (good_matches.size() > MIN_MATCH_COUNT){
 
-            /** get keypoint coordinates of good matches to find homography and remove outliers
-             * using ransac */
-            /** Also, always remember that this is already a transformation process. */
+                /** get keypoint coordinates of good matches to find homography and remove outliers
+                 * using ransac */
+                /** Also, always remember that this is already a transformation process. */
 
-            List<org.opencv.core.Point> refPoints = new ArrayList<>();
-            List<org.opencv.core.Point> mPoints = new ArrayList<>();
-            for(int i = 0; i<good_matches.size(); i++){
-                refPoints.add(refKeypoints.toList().get(good_matches.get(i).queryIdx).pt);
-                mPoints.add(qryKeypoints.toList().get(good_matches.get(i).trainIdx).pt);
-            }
-            // convertion of data types - there is maybe a more beautiful way
-            Mat outputMask = new Mat();
-            MatOfPoint2f rPtsMat = new MatOfPoint2f();
-            rPtsMat.fromList(refPoints);
-            MatOfPoint2f mPtsMat = new MatOfPoint2f();
-            mPtsMat.fromList(mPoints);
+                List<org.opencv.core.Point> refPoints = new ArrayList<>();
+                List<org.opencv.core.Point> mPoints = new ArrayList<>();
+                for(int i = 0; i<good_matches.size(); i++){
+                    refPoints.add(refKeypoints.toList().get(good_matches.get(i).queryIdx).pt);
+                    mPoints.add(qryKeypoints.toList().get(good_matches.get(i).trainIdx).pt);
+                }
+                // convertion of data types - there is maybe a more beautiful way
+                Mat outputMask = new Mat();
+                MatOfPoint2f rPtsMat = new MatOfPoint2f();
+                rPtsMat.fromList(refPoints);
+                MatOfPoint2f mPtsMat = new MatOfPoint2f();
+                mPtsMat.fromList(mPoints);
 
-            Mat obj_corners = new Mat(4,1, CvType.CV_32FC2);
-            Mat scene_corners = new Mat(4,1,CvType.CV_32FC2);
+                Mat obj_corners = new Mat(4,1, CvType.CV_32FC2);
+                Mat scene_corners = new Mat(4,1,CvType.CV_32FC2);
 
-            obj_corners.put(0, 0, new double[] {0,0});
-            obj_corners.put(1, 0, new double[] {refImage.width()-1,0});
-            obj_corners.put(2, 0, new double[] {refImage.width()-1,refImage.height()-1});
-            obj_corners.put(3, 0, new double[] {0,refImage.height()-1});
+                obj_corners.put(0, 0, new double[] {0,0});
+                obj_corners.put(1, 0, new double[] {refImage.width()-1,0});
+                obj_corners.put(2, 0, new double[] {refImage.width()-1,refImage.height()-1});
+                obj_corners.put(3, 0, new double[] {0,refImage.height()-1});
 
-            // Find homography - here just used to perform match filtering with RANSAC, but could be used to e.g. stitch images
-            // the smaller the allowed reprojection error (here 15), the more matches are filtered
-            Mat Homog = Calib3d.findHomography(rPtsMat, mPtsMat, Calib3d.RANSAC, 15, outputMask, 2000, 0.995);
-            Core.perspectiveTransform(obj_corners,scene_corners,Homog);
+                // Find homography - here just used to perform match filtering with RANSAC, but could be used to e.g. stitch images
+                // the smaller the allowed reprojection error (here 15), the more matches are filtered
+                Mat Homog = Calib3d.findHomography(rPtsMat, mPtsMat, Calib3d.RANSAC, 15, outputMask, 2000, 0.995);
+                Core.perspectiveTransform(obj_corners,scene_corners,Homog);
 
-            MatOfPoint sceneCorners = new MatOfPoint();
-            for (int i=0; i < scene_corners.rows(); i++) {
-                org.opencv.core.Point point = new org.opencv.core.Point();
-                point.set(scene_corners.get(i,0));
-                points.add(point);
-            }
-            sceneCorners.fromList(points);
-            mScenePoints.add(sceneCorners);
+                MatOfPoint sceneCorners = new MatOfPoint();
+                for (int i=0; i < scene_corners.rows(); i++) {
+                    org.opencv.core.Point point = new org.opencv.core.Point();
+                    point.set(scene_corners.get(i,0));
+                    points.add(point);
+                }
+                sceneCorners.fromList(points);
+                mScenePoints.add(sceneCorners);
 
-            if (Imgproc.contourArea(mScenePoints.get(0)) > (MIN_MATCH_COUNT*MIN_MATCH_COUNT)) {
-                LOGGER.i("Time to Match: " + Long.toString((time1 - time))
-                        + ", Number of matches: " + good_matches.size()
-                        + " (" + Integer.toString(MIN_MATCH_COUNT) + ")"
-                        + ", Time to transform: " + Long.toString((System.currentTimeMillis() - time1)));
+                if (Imgproc.contourArea(mScenePoints.get(0)) > (MIN_MATCH_COUNT*MIN_MATCH_COUNT)) {
+                    LOGGER.i("Time to Match: " + Long.toString((time1 - time))
+                            + ", Number of matches: " + good_matches.size()
+                            + " (" + Integer.toString(MIN_MATCH_COUNT) + ")"
+                            + ", Time to transform: " + Long.toString((System.currentTimeMillis() - time1)));
+                } else {
+                    // Transformation is too small or skewed, object probably not in view, or matching
+                    // error.
+                    LOGGER.i( "Time to Match: " + Long.toString((time1 - time))
+                            + ", Object probably not in view even with " + good_matches.size()
+                            + " (" + Integer.toString(MIN_MATCH_COUNT) + ") matches.");
+
+                    return null;
+                }
+                //result = "Enough matches.";
             } else {
-                // Transformation is too small or skewed, object probably not in view, or matching
-                // error.
-                LOGGER.i( "Time to Match: " + Long.toString((time1 - time))
-                        + ", Object probably not in view even with " + good_matches.size()
-                        + " (" + Integer.toString(MIN_MATCH_COUNT) + ") matches.");
-
+                LOGGER.i( "Time to Match: " + Long.toString((System.currentTimeMillis() - time))
+                        + ", Not Enough Matches (" + good_matches.size()
+                        + "/" + Integer.toString(MIN_MATCH_COUNT) + ")");
+                //result = "Not enough matches.";
                 return null;
             }
-            //result = "Enough matches.";
-        } else {
-            LOGGER.i( "Time to Match: " + Long.toString((System.currentTimeMillis() - time))
-                    + ", Not Enough Matches (" + good_matches.size()
-                    + "/" + Integer.toString(MIN_MATCH_COUNT) + ")");
-            //result = "Not enough matches.";
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            LOGGER.d("Cannot process.");
             return null;
         }
 
@@ -233,28 +251,27 @@ public class OrbDetector implements CvDetector{
 
     // This is a method that just does Matching and returns a Path/RectF if there is a match.
     @Override
-        public Recognition getTransformation(QueryImage queryImage,
-                AppRandomizer.ReferenceImage reference) {
+    public Recognition getTransformation(QueryImage queryImage,
+                                         AppRandomizer.ReferenceImage reference) {
 
         ArrayList<org.opencv.core.Point> scenePoints = imageMatcher(queryImage, reference);
 
-        /**
-         * Using path to draw a transformed bounding box.
-         */
         final Path path = new Path();
-        if (!scenePoints.isEmpty()) {
+        final RectF location = new RectF();
+
+        if (scenePoints != null) {
+            /**
+             * Using path to draw a transformed bounding box.
+             */
             path.moveTo((float) scenePoints.get(0).x, (float) scenePoints.get(0).y);
             path.lineTo((float) scenePoints.get(1).x, (float) scenePoints.get(1).y);
             path.lineTo((float) scenePoints.get(2).x, (float) scenePoints.get(2).y);
             path.lineTo((float) scenePoints.get(3).x, (float) scenePoints.get(3).y);
             path.close();
-        }
 
-        /**
-         * Using RectF to draw a fixed rectangle bounding box.
-         */
-        final RectF location = new RectF();
-        if (!scenePoints.isEmpty()) {
+            /**
+             * Using RectF to draw a fixed rectangle bounding box.
+             */
             float[] xValues = {(float) scenePoints.get(0).x,
                     (float) scenePoints.get(1).x,
                     (float) scenePoints.get(2).x,
@@ -266,7 +283,7 @@ public class OrbDetector implements CvDetector{
             Arrays.sort(xValues);
             Arrays.sort(yValues);
             location.set(xValues[0], yValues[0], xValues[3], yValues[3]);
-        }
+        } else return null;
 
         return new Recognition("",Pair.create(path, location));
     }
