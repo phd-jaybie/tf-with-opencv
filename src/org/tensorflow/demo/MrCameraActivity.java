@@ -35,12 +35,18 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Trace;
+import android.util.Pair;
 import android.util.Size;
 import android.view.KeyEvent;
 import android.view.Surface;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.Toast;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.opencv.android.OpenCVLoader;
@@ -57,7 +63,10 @@ import org.tensorflow.demo.simulator.AppRandomizer;
 import org.tensorflow.demo.simulator.Randomizer;
 
 public abstract class MrCameraActivity extends Activity
-    implements OnImageAvailableListener, Camera.PreviewCallback {
+    implements OnImageAvailableListener, Camera.PreviewCallback, AdapterView.OnItemSelectedListener {
+
+  //temporarily deactivated spinner
+
   private static final Logger LOGGER = new Logger();
 
   private static final int PERMISSIONS_REQUEST = 1;
@@ -69,6 +78,10 @@ public abstract class MrCameraActivity extends Activity
 
   private Handler handler;
   private HandlerThread handlerThread;
+
+  protected static final int CAPTURE_TIMEOUT = 10;
+  protected static final int INSTANCE_TIMEOUT = 10;
+
   private boolean useCamera2API;
   private boolean isProcessingFrame = false;
   private byte[][] yuvBytes = new byte[3][];
@@ -96,12 +109,17 @@ public abstract class MrCameraActivity extends Activity
   }
 
   // Below are the global variables and configurations for the simulated experiment.
-  private final int numberOfApps = 10;
+  protected static int numberOfApps = 10;
+
   private Randomizer randomizer;
   protected static List<App> appList;
+  protected static List<App> nextAppList;
   protected static String appListText = "App List: ";
+  protected static boolean nextAppList_AVAILABLE = false;
 
-    @Override
+  protected static List<List< Pair<List<App>, String> >> ultimateAppList;
+
+  @Override
   protected void onCreate(final Bundle savedInstanceState) {
     LOGGER.d("onCreate " + this);
     super.onCreate(null);
@@ -116,22 +134,93 @@ public abstract class MrCameraActivity extends Activity
       requestPermission();
     }
 
-    if (appList == null){
-        LOGGER.i("Creating a new app list.");
-        randomizer = AppRandomizer.create();
-        appList = randomizer.appGenerator(getApplicationContext(), numberOfApps);
+/*    if (ultimateAppList == null) generateUltimateAppList();
+    else {
+      appList = ultimateAppList.get(0).get(0).first;
+      appListText = ultimateAppList.get(0).get(0).second;
+    }*/
+
+    Spinner appSpinner = (Spinner) findViewById(R.id.app_spinner);
+    appSpinner.setOnItemSelectedListener(this);
+
+    // Create an ArrayAdapter using the string array and a default spinner layout
+    ArrayAdapter<CharSequence> appSpinnerAdapter = ArrayAdapter.createFromResource(this,
+          R.array.app_spinner_array, android.R.layout.simple_spinner_item);
+    appSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+    appSpinner.setAdapter(appSpinnerAdapter);
+
+    // Generating apps.
+    if (appList == null) {
+        generateAppList();
+        appList = nextAppList;
+        nextAppList_AVAILABLE = false;
     }
 
-    String appLogMessage = "App list: ";
-    for (App app: appList) {
-        appLogMessage = appLogMessage + app.getName() + "\n";
-    }
-    LOGGER.i(appLogMessage);
-    appListText = appLogMessage;
-
-      // creating an instance of the MrObjectManager
+    // creating an instance of the MrObjectManager
     if (manager == null) manager = new MrObjectManager();
 
+  }
+
+  protected void generateUltimateAppList(){
+    runInBackground(new Runnable() {
+      @Override
+      public void run() {
+        LOGGER.i("Creating an ultimate app list.");
+
+        ultimateAppList = new ArrayList<>(10);
+        randomizer = AppRandomizer.create();
+        for (int i = 10; i > 0; i--) {
+          List< Pair<List<App>, String> > appInstance = new ArrayList<>(10);
+          for (int n = 0; n < 10 ; n++) {
+            List<App> apps = randomizer.appGenerator(getApplicationContext(), i);
+            String appLogMessage = "App list for instance %d, sample %d:";
+            for (App app: apps){
+              appLogMessage = appLogMessage + app.getName() + "\n";
+            }
+            LOGGER.i(appLogMessage,i,n);
+
+            appInstance.add(new Pair(apps,appLogMessage));
+          }
+          ultimateAppList.add(appInstance);
+        }
+
+        appList = ultimateAppList.get(0).get(0).first;
+        appListText = ultimateAppList.get(0).get(0).second;
+      }
+    });
+
+  }
+
+
+  protected void generateAppList(){
+      LOGGER.i("Creating a new %d-app list.", numberOfApps);
+      randomizer = AppRandomizer.create();
+      nextAppList = randomizer.appGenerator(getApplicationContext(), numberOfApps);
+
+      String appLogMessage = "App list: ";
+      for (App app: nextAppList) {
+          appLogMessage = appLogMessage + app.getName() + "\n";
+      }
+      LOGGER.i(appLogMessage);
+      appListText = appLogMessage;
+
+      nextAppList_AVAILABLE = true;
+  }
+
+  @Override
+  public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+      numberOfApps = Integer.valueOf(parent.getItemAtPosition(pos).toString());
+      runInBackground(new Runnable() {
+          @Override
+          public void run() {
+              generateAppList();
+          }
+      });
+  }
+
+  @Override
+  public void onNothingSelected(AdapterView<?> parent) {
+      numberOfApps = 10;
   }
 
   private byte[] lastPreviewFrame;
@@ -194,7 +283,8 @@ public abstract class MrCameraActivity extends Activity
             isProcessingFrame = false;
           }
         };
-    processImage();
+
+    if (appList != null) processImage();
   }
 
   /**
@@ -254,7 +344,7 @@ public abstract class MrCameraActivity extends Activity
             }
           };
 
-      processImage();
+      if (appList != null) processImage();
     } catch (final Exception e) {
       LOGGER.e(e, "Exception!");
       Trace.endSection();

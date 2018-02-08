@@ -44,7 +44,7 @@ import org.tensorflow.demo.tracking.MultiBoxTracker;
  * An activity that uses a TensorFlowMultiBoxDetector and ObjectTracker to detect and then track
  * objects.
  */
-public class DetectorActivity extends MrCameraActivity implements OnImageAvailableListener {
+public class DetectorActivity extends MrCameraActivity implements OnImageAvailableListener{
   private static final Logger LOGGER = new Logger();
 
   // Configuration values for the prepackaged multibox model.

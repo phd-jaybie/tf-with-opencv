@@ -130,6 +130,8 @@ public class AppRandomizer implements Randomizer {
 
         Integer drawable = drawables[new Random().nextInt(drawables.length)];
 
+        long time = System.currentTimeMillis();
+
         if (method == "SIFT") { // If the internal CV Method uses SIFT
             try {
                 refImageMat = Utils.loadResource(context, drawable,
@@ -164,8 +166,6 @@ public class AppRandomizer implements Randomizer {
                 return null;
             }
         }
-
-        long time = System.currentTimeMillis();
 
         LOGGER.i("Time to process " + (System.currentTimeMillis() - time) +
                 ", Number of key points: " + refKeyPoints.toArray().length);

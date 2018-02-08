@@ -59,6 +59,10 @@ import java.util.Vector;
 public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnImageAvailableListener {
     private static final Logger LOGGER = new Logger();
 
+    private int captureCount = 0;
+    private int instanceCount = 0;
+    private int appCount = 0;
+
     // Configuration values for the prepackaged multibox model.
     private static final int MB_INPUT_SIZE = 224;
     private static final int MB_IMAGE_MEAN = 128;
@@ -317,6 +321,29 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
 
     @Override
     protected void processImage() {
+
+/*        if (captureCount >= CAPTURE_TIMEOUT) {
+            if (instanceCount >= INSTANCE_TIMEOUT) {
+                if (appCount < 10) {
+                    appCount++;
+                } else return;
+                instanceCount = 0;
+            } else instanceCount++;
+
+            appList = ultimateAppList.get(appCount).get(instanceCount).first;
+            appListText = ultimateAppList.get(appCount).get(instanceCount).second;
+            captureCount = 0;
+        }*/
+
+
+        if (captureCount > CAPTURE_TIMEOUT && nextAppList_AVAILABLE ) {
+            appList = nextAppList;
+            captureCount = 0;
+            nextAppList_AVAILABLE = false;
+            return;
+        }
+
+
         ++timestamp;
         final long currTimestamp = timestamp;
         byte[] originalLuminance = getLuminance();
@@ -505,8 +532,10 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                         requestRender();
                         computingDetection = false;
 
-                        LOGGER.i("Detection time %d ms, overall frame processing %d ms.",
-                                detectionTime,SystemClock.uptimeMillis() - startTime);
+                        LOGGER.i("%d: Overall frame processing %d ms, detection time %d ms",
+                                captureCount, SystemClock.uptimeMillis() - startTime, detectionTime);
+
+                        ++captureCount;
                     }
                 });
 
