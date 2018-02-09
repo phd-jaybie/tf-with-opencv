@@ -61,9 +61,11 @@ import org.tensorflow.demo.phd.MrObjectManager;
 import org.tensorflow.demo.simulator.App;
 import org.tensorflow.demo.simulator.AppRandomizer;
 import org.tensorflow.demo.simulator.Randomizer;
+import org.tensorflow.demo.MainActivity;
+import org.tensorflow.demo.simulator.SingletonAppList;
 
 public abstract class MrCameraActivity extends Activity
-    implements OnImageAvailableListener, Camera.PreviewCallback, AdapterView.OnItemSelectedListener {
+    implements OnImageAvailableListener, Camera.PreviewCallback {
 
   //temporarily deactivated spinner
 
@@ -108,16 +110,11 @@ public abstract class MrCameraActivity extends Activity
     }
   }
 
-  // Below are the global variables and configurations for the simulated experiment.
-  protected static int numberOfApps = 10;
+  protected static SingletonAppList singletonAppList;
 
-  private Randomizer randomizer;
   protected static List<App> appList;
   protected static List<App> nextAppList;
   protected static String appListText = "App List: ";
-  protected static boolean nextAppList_AVAILABLE = false;
-
-  protected static List<List< Pair<List<App>, String> >> ultimateAppList;
 
   @Override
   protected void onCreate(final Bundle savedInstanceState) {
@@ -134,26 +131,9 @@ public abstract class MrCameraActivity extends Activity
       requestPermission();
     }
 
-/*    if (ultimateAppList == null) generateUltimateAppList();
-    else {
-      appList = ultimateAppList.get(0).get(0).first;
-      appListText = ultimateAppList.get(0).get(0).second;
-    }*/
-
-    Spinner appSpinner = (Spinner) findViewById(R.id.app_spinner);
-    appSpinner.setOnItemSelectedListener(this);
-
-    // Create an ArrayAdapter using the string array and a default spinner layout
-    ArrayAdapter<CharSequence> appSpinnerAdapter = ArrayAdapter.createFromResource(this,
-          R.array.app_spinner_array, android.R.layout.simple_spinner_item);
-    appSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-    appSpinner.setAdapter(appSpinnerAdapter);
-
-    // Generating apps.
     if (appList == null) {
-        generateAppList();
-        appList = nextAppList;
-        nextAppList_AVAILABLE = false;
+      singletonAppList = SingletonAppList.getInstance();
+      getAppList();
     }
 
     // creating an instance of the MrObjectManager
@@ -161,68 +141,10 @@ public abstract class MrCameraActivity extends Activity
 
   }
 
-  protected void generateUltimateAppList(){
-    runInBackground(new Runnable() {
-      @Override
-      public void run() {
-        LOGGER.i("Creating an ultimate app list.");
-
-        ultimateAppList = new ArrayList<>(10);
-        randomizer = AppRandomizer.create();
-        for (int i = 10; i > 0; i--) {
-          List< Pair<List<App>, String> > appInstance = new ArrayList<>(10);
-          for (int n = 0; n < 10 ; n++) {
-            List<App> apps = randomizer.appGenerator(getApplicationContext(), i);
-            String appLogMessage = "App list for instance %d, sample %d:";
-            for (App app: apps){
-              appLogMessage = appLogMessage + app.getName() + "\n";
-            }
-            LOGGER.i(appLogMessage,i,n);
-
-            appInstance.add(new Pair(apps,appLogMessage));
-          }
-          ultimateAppList.add(appInstance);
-        }
-
-        appList = ultimateAppList.get(0).get(0).first;
-        appListText = ultimateAppList.get(0).get(0).second;
-      }
-    });
-
+  protected void getAppList(){
+    appList = singletonAppList.getList();
+    appListText = singletonAppList.getListText();
   }
-
-
-  protected void generateAppList(){
-      LOGGER.i("Creating a new %d-app list.", numberOfApps);
-      randomizer = AppRandomizer.create();
-      nextAppList = randomizer.appGenerator(getApplicationContext(), numberOfApps);
-
-      String appLogMessage = "App list: ";
-      for (App app: nextAppList) {
-          appLogMessage = appLogMessage + app.getName() + "\n";
-      }
-      LOGGER.i(appLogMessage);
-      appListText = appLogMessage;
-
-      nextAppList_AVAILABLE = true;
-  }
-
-  @Override
-  public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-      numberOfApps = Integer.valueOf(parent.getItemAtPosition(pos).toString());
-      runInBackground(new Runnable() {
-          @Override
-          public void run() {
-              generateAppList();
-          }
-      });
-  }
-
-  @Override
-  public void onNothingSelected(AdapterView<?> parent) {
-      numberOfApps = 10;
-  }
-
   private byte[] lastPreviewFrame;
 
   protected int[] getRgbBytes() {

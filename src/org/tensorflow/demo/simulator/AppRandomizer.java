@@ -16,6 +16,7 @@ import org.tensorflow.demo.OverlayView;
 import org.tensorflow.demo.R;
 import org.tensorflow.demo.env.Logger;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -61,7 +62,7 @@ public class AppRandomizer implements Randomizer {
                             "cake", "chair","couch", "dining table"}, //kitchen or food objects
             };
 
-    public class ReferenceImage {
+    public class ReferenceImage implements Serializable {
         private Mat RefImageMat;
         private MatOfKeyPoint RefKeyPoints;
         private Mat RefDescriptors;

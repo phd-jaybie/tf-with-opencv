@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/generate_textView"
+        android:layout_width="match_parent"
+        android:layout_height="101dp"
+        android:text="" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/number_of_apps"
+            android:layout_width="285dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ems="10"
+            android:inputType="number"
+            android:text="@string/number_of_apps" />
+
+        <Button
+            android:id="@+id/generate_app_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:onClick="generateAppList"
+            android:text="@string/button_generate" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/mr_detection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="mrDetectionIntent"
+        android:text="@string/activity_name_mr_detection" />
+
+    <Button
+        android:id="@+id/mr_detection_with_abstraction"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="mrDetectionIntentProtected"
+        android:text="@string/activity_name_mr_detection_with_abstraction" />
+</LinearLayout>

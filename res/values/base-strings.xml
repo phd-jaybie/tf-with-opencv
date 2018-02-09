@@ -17,27 +17,16 @@
 
 <resources>
     <string name="app_name">TensorFlow Demo</string>
+    <string name="activity_main_mr">MR Startup Menu</string>
     <string name="activity_name_classification">TF Classify</string>
     <string name="activity_name_detection">TF Detect</string>
-    <string name="activity_name_mr_detection">MR Detection</string>
-    <string name="activity_name_mr_detection_with_abstraction">MR Detection with Abstraction</string>
     <string name="activity_name_stylize">TF Stylize</string>
     <string name="activity_name_speech">TF Speech</string>
 
-    <string name="number_of_apps">Choose Number of Apps:</string>
-    <string-array name="app_spinner_array">
-        <item>1</item>
-        <item>2</item>
-        <item>3</item>
-        <item>4</item>
-        <item>5</item>
-        <item>6</item>
-        <item>7</item>
-        <item>8</item>
-        <item>9</item>
-        <item>10</item>
-        <item>20</item>
-        <item>30</item>
-    </string-array>
+    <string name="button_generate">Generate App List</string>
+    <string name="number_of_apps">Number of Apps</string>
+
+    <string name="activity_name_mr_detection">MR Detection</string>
+    <string name="activity_name_mr_detection_with_abstraction">MR Detection w/ Abstraction</string>
 
 </resources>
