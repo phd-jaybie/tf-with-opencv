@@ -60,8 +60,6 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
     private static final Logger LOGGER = new Logger();
 
     private int captureCount = 0;
-    private int instanceCount = 0;
-    private int appCount = 0;
 
     // Configuration values for the prepackaged multibox model.
     private static final int MB_INPUT_SIZE = 224;
@@ -335,14 +333,7 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
             captureCount = 0;
         }*/
 
-
-        if (captureCount > CAPTURE_TIMEOUT && nextAppList_AVAILABLE ) {
-            appList = nextAppList;
-            captureCount = 0;
-            nextAppList_AVAILABLE = false;
-            return;
-        }
-
+        if (captureCount > CAPTURE_TIMEOUT) return;
 
         ++timestamp;
         final long currTimestamp = timestamp;
@@ -423,19 +414,15 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                         List<Classifier.Recognition> cResults = new ArrayList<>();
                         CvDetector.QueryImage sResult = new CvDetector.QueryImage();
                         CvDetector.QueryImage oResult = new CvDetector.QueryImage();
-                        if (appListText.contains("MULTIBOX")) {
-                            dResults = detector.recognizeImage(croppedBitmap);
-                        } else if (appListText.contains("CLASSIFIER")) {
-                            cResults = classifier.recognizeImage(croppedBitmap);
-                        } else if (appListText.contains("SIFT")) {
-                            sResult = siftDetector.imageDetector(croppedBitmap);
-                        } else if (appListText.contains("ORB")) {
-                            oResult = orbDetector.imageDetector(croppedBitmap);
-                        }
+                        if (appListText.contains("MULTIBOX")) dResults = detector.recognizeImage(croppedBitmap);
+                        if (appListText.contains("SIFT")) sResult = siftDetector.imageDetector(croppedBitmap);
+                        if (appListText.contains("ORB")) oResult = orbDetector.imageDetector(croppedBitmap);
 
                         long detectionTime = SystemClock.uptimeMillis() - startTime;
 
                         for (final App app : appList) {
+
+                            LOGGER.i("Doing app: " + app.toString());
 
                             /*if (tfResults.isEmpty()) {
                                 tfResults = detector.recognizeImage(croppedBitmap);
@@ -457,18 +444,18 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                                     //transformation
                                     /*switch (app.getMethod().second) {
                                         case "MULTIBOX":*/
-                                            for (final Classifier.Recognition dResult : dResults) {
-                                                final RectF location = dResult.getLocation();
-                                                if (location != null && dResult.getConfidence() >= minimumConfidence) {
-                                                    canvas.drawRect(location, paint);
-                                                    if (!objectsOfInterest.contains(dResult.getTitle())){
-                                                        continue; //Don't overlay if not seen.
-                                                    }
-                                                    cropToFrameTransform.mapRect(location);
-                                                    dResult.setLocation(location);
-                                                    appResults.add(dResult);
-                                                }
+                                    for (final Classifier.Recognition dResult : dResults) {
+                                        final RectF location = dResult.getLocation();
+                                        if (location != null && dResult.getConfidence() >= minimumConfidence) {
+                                            canvas.drawRect(location, paint);
+                                            if (!objectsOfInterest.contains(dResult.getTitle())){
+                                                continue; //Don't overlay if not seen.
                                             }
+                                            cropToFrameTransform.mapRect(location);
+                                            dResult.setLocation(location);
+                                            appResults.add(dResult);
+                                        }
+                                    }
 /*
                                             break;
                                         case "CLASSIFIER":

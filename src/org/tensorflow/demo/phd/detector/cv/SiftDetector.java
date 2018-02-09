@@ -72,12 +72,7 @@ public class SiftDetector implements CvDetector{
         } /**finally
          } */
 
-        final QueryImage query = new QueryImage();
-        query.QryImageMat = mat;
-        query.QryDescriptors = mDescriptors;
-        query.QryKeyPoints = mKeyPoints;
-
-        return query;
+        return new QueryImage(mat, mKeyPoints, mDescriptors);
     }
 
     @Override
@@ -86,7 +81,7 @@ public class SiftDetector implements CvDetector{
         final QueryImage query = imageDetector(bitmap);
         ArrayList<org.opencv.core.Point> scenePoints = new ArrayList<>();
 
-        MatOfKeyPoint keypoints = query.QryKeyPoints;
+        MatOfKeyPoint keypoints = query.getQryKeyPoints();
 
         if (0 != keypoints.toArray().length) {
             scenePoints = imageMatcher(query, reference);
@@ -139,13 +134,13 @@ public class SiftDetector implements CvDetector{
         FlannBasedMatcher descriptorMatcher = FlannBasedMatcher.create();
 
         Mat refImage = reference.getRefImageMat();
-        Mat qryImage = queryImage.QryImageMat;
+        Mat qryImage = queryImage.getQryImageMat();
 
         Mat refDescriptors = reference.getRefDescriptors();
-        Mat qryDescriptors = queryImage.QryDescriptors;
+        Mat qryDescriptors = queryImage.getQryDescriptors();
 
         MatOfKeyPoint refKeypoints = reference.getRefKeyPoints();
-        MatOfKeyPoint qryKeypoints = queryImage.QryKeyPoints;
+        MatOfKeyPoint qryKeypoints = queryImage.getQryKeyPoints();
 
         try{
             descriptorMatcher.knnMatch(refDescriptors, qryDescriptors, matches, 2);

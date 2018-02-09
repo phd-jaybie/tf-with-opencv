@@ -57,10 +57,7 @@ import org.tensorflow.demo.augmenting.Augmenter;
 public class MrDetectorActivity extends MrCameraActivity implements OnImageAvailableListener {
     private static final Logger LOGGER = new Logger();
 
-
     private int captureCount = 0;
-    private int instanceCount = 0;
-    private int appCount = 0;
 
     // Configuration values for the prepackaged multibox model.
     private static final int MB_INPUT_SIZE = 224;
@@ -333,12 +330,7 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
             captureCount = 0;
         }*/
 
-        if (captureCount > CAPTURE_TIMEOUT && nextAppList_AVAILABLE ) {
-            appList = nextAppList;
-            captureCount = 0;
-            nextAppList_AVAILABLE = false;
-            return;
-        }
+        if (captureCount > CAPTURE_TIMEOUT) return;
 
         ++timestamp;
         final long currTimestamp = timestamp;

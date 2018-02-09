@@ -1,5 +1,6 @@
 package org.tensorflow.demo;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -10,6 +11,7 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import org.opencv.android.OpenCVLoader;
 import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.phd.MrDetectorActivity;
 import org.tensorflow.demo.phd.ProtectedMrDetectorActivity;
@@ -33,30 +35,43 @@ public class MainActivity extends Activity {
 
     private Randomizer randomizer;
 
+    private int numberOfApps;
     public List<App> appList = new ArrayList<>();
     public String appListText;
 
     private SingletonAppList singletonAppList;
-
     private TextView textView;
     private EditText numberText;
 
     public final String firstMessage = "Generate App list first";
 
+    static {
+        if(!OpenCVLoader.initDebug()){
+            LOGGER.d("OpenCV not loaded");
+        } else {
+            LOGGER.d("OpenCV loaded");
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState){
+        LOGGER.d("onCreate " + this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        initialize();
+    }
+
+    private void initialize() {
         textView = (TextView) findViewById(R.id.generate_textView);
         numberText = (EditText) findViewById(R.id.number_of_apps);
         singletonAppList = SingletonAppList.getInstance();
-
     }
 
-    public void generateAppList(){
+    public void generateAppList(View view){
 
-        final int numberOfApps = Integer.getInteger(numberText.getText().toString());
+        String sNumberOfApps = numberText.getText().toString();
+        numberOfApps = Integer.valueOf(sNumberOfApps);
 
         String message = "Creating a new " + numberOfApps + "-app list.";
         LOGGER.i(message);
@@ -68,7 +83,7 @@ public class MainActivity extends Activity {
                 randomizer = AppRandomizer.create();
                 appList = randomizer.appGenerator(getApplicationContext(), numberOfApps);
 
-                String appLogMessage = "App list: ";
+                String appLogMessage = "App list:\n";
                 for (App app: appList) {
                     appLogMessage = appLogMessage + app.getName() + "\n";
                 }
@@ -85,7 +100,7 @@ public class MainActivity extends Activity {
 
     public void mrDetectionIntent(View view){
 
-        if (appList == null) {
+        if (singletonAppList.getList().isEmpty()) {
             textView.setText(firstMessage);
             return;
         }
@@ -97,7 +112,7 @@ public class MainActivity extends Activity {
 
     public void mrDetectionIntentProtected(View view){
 
-        if (appList == null) {
+        if (singletonAppList.getList().isEmpty()) {
             textView.setText(firstMessage);
             return;
         }
@@ -129,6 +144,7 @@ public class MainActivity extends Activity {
         LOGGER.d("onStart " + this);
         super.onStart();
 
+        initialize();
         startBackgroundThread();
     }
 
@@ -137,6 +153,7 @@ public class MainActivity extends Activity {
         LOGGER.d("onResume " + this);
         super.onResume();
 
+        initialize();
         startBackgroundThread();
     }
 
@@ -152,18 +169,6 @@ public class MainActivity extends Activity {
         stopBackgroundThread();
 
         super.onPause();
-    }
-
-    @Override
-    public synchronized void onStop() {
-        LOGGER.d("onStop " + this);
-        super.onStop();
-    }
-
-    @Override
-    public synchronized void onDestroy() {
-        LOGGER.d("onDestroy " + this);
-        super.onDestroy();
     }
 
     protected synchronized void runInBackground(final Runnable r) {

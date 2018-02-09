@@ -22,6 +22,8 @@ public class App implements Serializable {
     private final String[] objectsOfInterest;
     private AppRandomizer.ReferenceImage reference;
 
+    private final List<App.AppCallback> callbacks = new LinkedList<>();
+
     public App(int id, String name, Pair<String, String> method, String[] objects, AppRandomizer.ReferenceImage reference) {
         this.id = id;
         this.name = name;
@@ -55,6 +57,25 @@ public class App implements Serializable {
         appString = appString + this.name;
         appString = appString + this.method;
         return appString;
+    }
+
+    public interface AppCallback {
+        public void appCallback();
+    }
+
+    public void addCallback(final AppCallback callback) {
+        callbacks.add(callback);
+    }
+
+    public synchronized void processAllCallbacks() {
+        for (final AppCallback callback : callbacks) {
+            callback.appCallback();
+        }
+    }
+
+    public void process(Classifier.Recognition recognition, Long timestamp){
+        // This is a sample method that an app's appCallback calls.
+        // Each app can define their own appCallback methods.
     }
 
 }

@@ -6,12 +6,14 @@
     <TextView
         android:id="@+id/generate_textView"
         android:layout_width="match_parent"
-        android:layout_height="101dp"
+        android:layout_height="303dp"
+        android:layout_weight="10"
         android:text="" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_weight="1"
         android:orientation="horizontal">
 
         <EditText
@@ -20,8 +22,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:ems="10"
-            android:inputType="number"
-            android:text="@string/number_of_apps" />
+            android:hint="@string/number_of_apps"
+            android:inputType="number" />
 
         <Button
             android:id="@+id/generate_app_list"
@@ -36,6 +38,8 @@
         android:id="@+id/mr_detection"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_margin="@dimen/margin_small"
+        android:layout_weight="1"
         android:onClick="mrDetectionIntent"
         android:text="@string/activity_name_mr_detection" />
 
@@ -43,6 +47,8 @@
         android:id="@+id/mr_detection_with_abstraction"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_margin="@dimen/margin_small"
+        android:layout_weight="1"
         android:onClick="mrDetectionIntentProtected"
         android:text="@string/activity_name_mr_detection_with_abstraction" />
 </LinearLayout>

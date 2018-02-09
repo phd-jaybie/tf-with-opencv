@@ -35,9 +35,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Trace;
+import android.support.v4.app.NavUtils;
 import android.util.Pair;
 import android.util.Size;
 import android.view.KeyEvent;
+import android.view.MenuItem;
 import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
@@ -102,25 +104,17 @@ public abstract class MrCameraActivity extends Activity
   // Global values and containers for detection using OpenCV.
   public static Integer MIN_MATCH_COUNT = 30;
 
-  static {
-    if(!OpenCVLoader.initDebug()){
-      LOGGER.d("OpenCV not loaded");
-    } else {
-      LOGGER.d("OpenCV loaded");
-    }
-  }
-
-  protected static SingletonAppList singletonAppList;
+  protected static SingletonAppList singletonAppList = SingletonAppList.getInstance();
 
   protected static List<App> appList;
-  protected static List<App> nextAppList;
-  protected static String appListText = "App List: ";
+  protected static String appListText;
 
   @Override
   protected void onCreate(final Bundle savedInstanceState) {
     LOGGER.d("onCreate " + this);
     super.onCreate(null);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    getActionBar().setDisplayHomeAsUpEnabled(true);
 
     setContentView(R.layout.activity_camera);
     startBackgroundThread();
@@ -136,15 +130,19 @@ public abstract class MrCameraActivity extends Activity
       getAppList();
     }
 
+    LOGGER.d(appListText);
+
     // creating an instance of the MrObjectManager
     if (manager == null) manager = new MrObjectManager();
 
   }
 
   protected void getAppList(){
+    LOGGER.d("Getting a new list from SingletonAppList");
     appList = singletonAppList.getList();
     appListText = singletonAppList.getListText();
   }
+
   private byte[] lastPreviewFrame;
 
   protected int[] getRgbBytes() {
@@ -322,6 +320,7 @@ public abstract class MrCameraActivity extends Activity
     stopBackgroundThread();
 
     super.onPause();
+    appList = null;
     manager.storeList();
   }
 

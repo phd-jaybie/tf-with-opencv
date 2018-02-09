@@ -68,9 +68,43 @@ public interface CvDetector{
     }
 
     class QueryImage {
-        Mat QryImageMat;
-        MatOfKeyPoint QryKeyPoints;
-        Mat QryDescriptors;
+        private Mat QryImageMat;
+        private MatOfKeyPoint QryKeyPoints;
+        private Mat QryDescriptors;
+
+        public QueryImage(Mat qryImageMat, MatOfKeyPoint qryKeyPoints, Mat qryDescriptors){
+            this.QryImageMat = qryImageMat;
+            this.QryDescriptors = qryDescriptors;
+            this.QryKeyPoints = qryKeyPoints;
+        }
+
+        public QueryImage(){
+        }
+
+        public void setQryDescriptors(Mat qryDescriptors) {
+            this.QryDescriptors = qryDescriptors;
+        }
+
+        public Mat getQryDescriptors() {
+            return QryDescriptors;
+        }
+
+        public void setQryImageMat(Mat qryImageMat) {
+            this.QryImageMat = qryImageMat;
+        }
+
+        public Mat getQryImageMat() {
+            return QryImageMat;
+        }
+
+        public void setQryKeyPoints(MatOfKeyPoint qryKeyPoints) {
+            this.QryKeyPoints = qryKeyPoints;
+        }
+
+        public MatOfKeyPoint getQryKeyPoints() {
+            return QryKeyPoints;
+        }
+
     }
 
     QueryImage imageDetector(Bitmap bitmap);

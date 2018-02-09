@@ -74,12 +74,7 @@ public class OrbDetector implements CvDetector{
         } /**finally
          } */
 
-        final QueryImage query = new QueryImage();
-        query.QryImageMat = mat;
-        query.QryDescriptors = mDescriptors;
-        query.QryKeyPoints = mKeyPoints;
-
-        return query;
+        return new QueryImage(mat, mKeyPoints, mDescriptors);
     }
 
     @Override
@@ -88,12 +83,12 @@ public class OrbDetector implements CvDetector{
         final QueryImage query = imageDetector(bitmap);
         ArrayList<org.opencv.core.Point> scenePoints = new ArrayList<>();
 
-        MatOfKeyPoint keypoints = query.QryKeyPoints;
+        MatOfKeyPoint keypoints = query.getQryKeyPoints();
 
         if (reference.getRefDescriptors() == null) {
             LOGGER.d("Reference descriptors are null");
             return null;
-        } else if (query.QryDescriptors == null) {
+        } else if (query.getQryDescriptors() == null) {
             LOGGER.d("Query descriptors are null");
             return null;
         }
@@ -152,13 +147,13 @@ public class OrbDetector implements CvDetector{
         BFMatcher descriptorMatcher = BFMatcher.create(); //NORM_HAMMING,true);
 
         Mat refImage = reference.getRefImageMat();
-        Mat qryImage = queryImage.QryImageMat;
+        Mat qryImage = queryImage.getQryImageMat();
 
         Mat refDescriptors = reference.getRefDescriptors();
-        Mat qryDescriptors = queryImage.QryDescriptors;
+        Mat qryDescriptors = queryImage.getQryDescriptors();
 
         MatOfKeyPoint refKeypoints = reference.getRefKeyPoints();
-        MatOfKeyPoint qryKeypoints = queryImage.QryKeyPoints;
+        MatOfKeyPoint qryKeypoints = queryImage.getQryKeyPoints();
 
         try{
             descriptorMatcher.knnMatch(refDescriptors, qryDescriptors, matches, 2);
