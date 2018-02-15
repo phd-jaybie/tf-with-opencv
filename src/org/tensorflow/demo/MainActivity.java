@@ -9,6 +9,7 @@ import android.os.HandlerThread;
 import android.util.Pair;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import org.opencv.android.OpenCVLoader;
@@ -42,6 +43,8 @@ public class MainActivity extends Activity {
     private SingletonAppList singletonAppList;
     private TextView textView;
     private EditText numberText;
+    private Switch debugSwitch; // This switch just tells the processing activities if captures are limited or not.
+
 
     public final String firstMessage = "Generate App list first";
 
@@ -65,6 +68,7 @@ public class MainActivity extends Activity {
     private void initialize() {
         textView = (TextView) findViewById(R.id.generate_textView);
         numberText = (EditText) findViewById(R.id.number_of_apps);
+        debugSwitch = (Switch) findViewById(R.id.debug_toggle);
         singletonAppList = SingletonAppList.getInstance();
     }
 
@@ -73,13 +77,19 @@ public class MainActivity extends Activity {
         String sNumberOfApps = numberText.getText().toString();
         numberOfApps = Integer.valueOf(sNumberOfApps);
 
-        String message = "Creating a new " + numberOfApps + "-app list.";
-        LOGGER.i(message);
-        textView.setText(message);
-
         runInBackground(new Runnable() {
             @Override
             public void run() {
+
+                String message;
+
+                if (debugSwitch.isChecked()) message = "Will only take 10 captures.\n";
+                else message = "Will capture continuously.\n";
+
+                message = message + "Creating a new " + numberOfApps + "-app list.\n";
+                LOGGER.i(message);
+                textView.setText(message);
+
                 randomizer = AppRandomizer.create();
                 appList = randomizer.appGenerator(getApplicationContext(), numberOfApps);
 
@@ -90,9 +100,10 @@ public class MainActivity extends Activity {
                 LOGGER.i(appLogMessage);
                 appListText = appLogMessage;
 
-                textView.setText(appLogMessage);
+                textView.setText(message + appLogMessage);
                 singletonAppList.setList(appList);
                 singletonAppList.setListText(appListText);
+                singletonAppList.setFastDebug(debugSwitch.isChecked());
             }
         });
 

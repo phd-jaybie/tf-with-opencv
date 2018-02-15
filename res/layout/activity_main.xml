@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -18,20 +19,44 @@
 
         <EditText
             android:id="@+id/number_of_apps"
-            android:layout_width="285dp"
+            android:layout_width="100dp"
             android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/margin_small"
             android:layout_weight="1"
             android:ems="10"
             android:hint="@string/number_of_apps"
-            android:inputType="number" />
+            android:inputType="number"
+            android:textSize="12sp" />
 
         <Button
             android:id="@+id/generate_app_list"
-            android:layout_width="match_parent"
+            android:layout_width="100dp"
             android:layout_height="wrap_content"
+            android:layout_marginRight="@dimen/margin_small"
             android:layout_weight="2"
             android:onClick="generateAppList"
-            android:text="@string/button_generate" />
+            android:text="@string/button_generate"
+            android:textSize="12sp" />
+
+        <Space
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="3" />
+
+        <Switch
+            android:id="@+id/debug_toggle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="@dimen/margin_small"
+            android:layout_weight="1"
+            android:checked="false"
+            android:splitTrack="false"
+            android:text="@string/toggle_fast_debug"
+            android:textOff="Off"
+            android:textOn="On"
+            android:textSize="12sp"
+            tools:checked="false" />
+
     </LinearLayout>
 
     <Button

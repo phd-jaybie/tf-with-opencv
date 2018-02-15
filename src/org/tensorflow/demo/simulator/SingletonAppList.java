@@ -9,6 +9,7 @@ import java.util.List;
 
 public class SingletonAppList  {
     private static final SingletonAppList instance = new SingletonAppList();
+    private static boolean fastDebug = true;
 
     private List<App> list = new ArrayList<>();
     private String listText;
@@ -35,5 +36,13 @@ public class SingletonAppList  {
 
     public String getListText() {
         return listText;
+    }
+
+    public static boolean isFastDebug() {
+        return fastDebug;
+    }
+
+    public void setFastDebug(boolean fastDebug) {
+        this.fastDebug = fastDebug;
     }
 }

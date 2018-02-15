@@ -23,7 +23,8 @@
     <string name="activity_name_stylize">TF Stylize</string>
     <string name="activity_name_speech">TF Speech</string>
 
-    <string name="button_generate">Generate App List</string>
+    <string name="toggle_fast_debug">Fast Debug</string>
+    <string name="button_generate">Generate</string>
     <string name="number_of_apps">Number of Apps</string>
 
     <string name="activity_name_mr_detection">MR Detection</string>

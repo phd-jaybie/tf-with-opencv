@@ -333,7 +333,7 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
             captureCount = 0;
         }*/
 
-        if (captureCount > CAPTURE_TIMEOUT) return;
+        if (singletonAppList.isFastDebug()) if (captureCount > CAPTURE_TIMEOUT) return;
 
         ++timestamp;
         final long currTimestamp = timestamp;
