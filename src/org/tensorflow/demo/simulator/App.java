@@ -1,10 +1,8 @@
 package org.tensorflow.demo.simulator;
 
-import android.graphics.Canvas;
 import android.util.Pair;
 
 import org.tensorflow.demo.Classifier;
-import org.tensorflow.demo.OverlayView;
 
 import java.io.Serializable;
 import java.util.LinkedList;

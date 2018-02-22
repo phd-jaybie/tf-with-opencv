@@ -1,8 +1,6 @@
 package org.tensorflow.demo.simulator;
 
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.drawable.Drawable;
 import android.util.Pair;
 
 import org.opencv.android.Utils;
@@ -11,14 +9,12 @@ import org.opencv.core.MatOfKeyPoint;
 import org.opencv.features2d.ORB;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.xfeatures2d.SIFT;
-import org.tensorflow.demo.Classifier;
-import org.tensorflow.demo.OverlayView;
 import org.tensorflow.demo.R;
 import org.tensorflow.demo.env.Logger;
 
 import java.io.Serializable;
+import java.sql.Ref;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
@@ -38,6 +34,9 @@ public class AppRandomizer implements Randomizer {
 
     static final String[] tfMethod = new String[]
             {"MULTIBOX","CLASSIFIER"};
+
+    static final String[] refnames = new String[]
+            {"csiro", "data61", "uhu", "unsw"};
 
     static final Integer[] drawables = new Integer[]
             {R.drawable.csiro, R.drawable.data61, R.drawable.uhu, R.drawable.unsw};
@@ -62,10 +61,16 @@ public class AppRandomizer implements Randomizer {
                             "cake", "chair","couch", "dining table"}, //kitchen or food objects
             };
 
-    public class ReferenceImage implements Serializable {
+    public class ReferenceImage {
+
+        private String RefName;
         private Mat RefImageMat;
         private MatOfKeyPoint RefKeyPoints;
         private Mat RefDescriptors;
+
+        public String getRefName() {
+            return RefName;
+        }
 
         public Mat getRefImageMat() {
             return RefImageMat;
@@ -78,6 +83,8 @@ public class AppRandomizer implements Randomizer {
         public Mat getRefDescriptors() {
             return RefDescriptors;
         }
+
+        public void setRefName(String refName) { RefName = refName; }
 
         public void setRefImageMat(Mat refImageMat) {
             RefImageMat = refImageMat;
@@ -129,13 +136,13 @@ public class AppRandomizer implements Randomizer {
         Mat refDescriptors = new Mat();
         Mat refImageMat = new Mat();
 
-        Integer drawable = drawables[new Random().nextInt(drawables.length)];
+        Integer drawable = new Random().nextInt(drawables.length);
 
         long time = System.currentTimeMillis();
 
         if (method == "SIFT") { // If the internal CV Method uses SIFT
             try {
-                refImageMat = Utils.loadResource(context, drawable,
+                refImageMat = Utils.loadResource(context, drawables[drawable],
                         Imgcodecs.CV_LOAD_IMAGE_COLOR);
 
                 SIFT mFeatureDetector = SIFT.create();
@@ -151,7 +158,7 @@ public class AppRandomizer implements Randomizer {
             }
         } else { // If the internal CV Method uses ORB
             try {
-                refImageMat = Utils.loadResource(context, drawable,
+                refImageMat = Utils.loadResource(context, drawables[drawable],
                         Imgcodecs.CV_LOAD_IMAGE_COLOR);
 
                 ORB mFeatureDetector = ORB.create();
@@ -171,6 +178,7 @@ public class AppRandomizer implements Randomizer {
         LOGGER.i("Time to process " + (System.currentTimeMillis() - time) +
                 ", Number of key points: " + refKeyPoints.toArray().length);
 
+        reference.setRefName(refnames[drawable]);
         reference.setRefImageMat(refImageMat);
         reference.setRefDescriptors(refDescriptors);
         reference.setRefKeyPoints(refKeyPoints);

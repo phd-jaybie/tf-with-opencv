@@ -1,17 +1,9 @@
 package org.tensorflow.demo.augmenting;
 
-import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.RectF;
-import android.util.Pair;
 
-import org.tensorflow.demo.Classifier;
 import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.phd.MrObjectManager;
-
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Created by deg032 on 1/2/18.

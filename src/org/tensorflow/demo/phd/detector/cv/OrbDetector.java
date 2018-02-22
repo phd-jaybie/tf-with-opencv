@@ -21,10 +21,8 @@ import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.features2d.BFMatcher;
-import org.opencv.features2d.FlannBasedMatcher;
 import org.opencv.features2d.ORB;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.xfeatures2d.SIFT;
 import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.simulator.AppRandomizer;
 
@@ -34,8 +32,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.opencv.core.Core.NORM_HAMMING;
-import static org.opencv.core.Core.sumElems;
 import static org.tensorflow.demo.MrCameraActivity.MIN_MATCH_COUNT;
 
 public class OrbDetector implements CvDetector{

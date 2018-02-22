@@ -10,6 +10,9 @@ package org.tensorflow.demo.phd;
  * currently running apps have access to them.
  */
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
@@ -20,13 +23,15 @@ import android.graphics.Paint.Style;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.media.ImageReader.OnImageAvailableListener;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.SystemClock;
 import android.util.Size;
 import android.util.TypedValue;
 import android.widget.Toast;
 
-import org.tensorflow.demo.Classifier;
 import org.tensorflow.demo.MrCameraActivity;
+import org.tensorflow.demo.Classifier;
 import org.tensorflow.demo.OverlayView;
 import org.tensorflow.demo.OverlayView.DrawCallback;
 import org.tensorflow.demo.R;
@@ -35,12 +40,14 @@ import org.tensorflow.demo.TensorFlowMultiBoxDetector;
 import org.tensorflow.demo.TensorFlowObjectDetectionAPIModel;
 import org.tensorflow.demo.TensorFlowYoloDetector;
 import org.tensorflow.demo.augmenting.Augmenter;
-import org.tensorflow.demo.env.BorderedText;
-import org.tensorflow.demo.env.ImageUtils;
-import org.tensorflow.demo.env.Logger;
+import org.tensorflow.demo.network.NetworkFragment;
+import org.tensorflow.demo.network.NetworkListener;
 import org.tensorflow.demo.phd.detector.cv.CvDetector;
 import org.tensorflow.demo.phd.detector.cv.OrbDetector;
 import org.tensorflow.demo.phd.detector.cv.SiftDetector;
+import org.tensorflow.demo.env.BorderedText;
+import org.tensorflow.demo.env.ImageUtils;
+import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.simulator.App;
 import org.tensorflow.demo.tracking.MultiBoxTracker;
 
@@ -55,7 +62,9 @@ import java.util.Vector;
  * An activity that follows Tensorflow's demo DetectorActivity class as template and implements
  * classical visual detection using OpenCV.
  */
-public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraActivity implements OnImageAvailableListener {
+public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraActivity
+        implements OnImageAvailableListener, NetworkListener {
+
     private static final Logger LOGGER = new Logger();
 
     private int captureCount = 0;
@@ -290,10 +299,11 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                         }
                         lines.add("");
 
+                        lines.add("Running " + singletonAppList.getList().size() + " apps");
                         lines.add("Frame: " + previewWidth + "x" + previewHeight);
                         lines.add("Crop: " + copy.getWidth() + "x" + copy.getHeight());
                         lines.add("View: " + canvas.getWidth() + "x" + canvas.getHeight());
-                        lines.add("Rotation: " + sensorOrientation);
+                        //lines.add("Rotation: " + sensorOrientation);
                         lines.add("Inference time: " + lastProcessingTimeMs + "ms");
 
                         borderedText.drawLines(canvas, 10, canvas.getHeight() - 10, lines);
@@ -314,6 +324,39 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                         augmenter.drawAugmentations(canvas);
                     }
                 });
+
+        manager = new MrObjectManager();
+    }
+
+    private void sharedAbstraction(){
+        //if (isNetworkConnected())
+            manager.
+                refreshListFromNetwork(mNetworkFragment,this);
+        //else manager.refreshList();
+    }
+
+
+    private boolean isNetworkConnected() {
+        ConnectivityManager connMgr = (ConnectivityManager)
+                getSystemService(Context.CONNECTIVITY_SERVICE); // 1
+        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo(); // 2
+        return networkInfo != null && networkInfo.isConnected(); // 3
+    }
+
+    private void noConnection(){
+        new AlertDialog.Builder(this)
+                .setTitle("No Internet Connection")
+                .setMessage("It looks like your internet connection is off. Please turn it " +
+                        "on and try again")
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                    }
+                }).setIcon(android.R.drawable.ic_dialog_alert).show();
+    }
+
+    @Override // part of the network listener
+    public void downloadComplete(){
+        // Do Whatever
     }
 
     @Override
@@ -354,6 +397,7 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
             readyForNextImage();
             return;
         }
+
         computingDetection = true;
         LOGGER.i("Preparing image " + currTimestamp + " for detection in bg thread.");
 
@@ -397,7 +441,7 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                                 break;
                         }
 
-                        // final list of recognitions before rendering ot the trackingOverlayView
+                        // final list of recognitions before rendering to the trackingOverlayView
                         final List<Classifier.Recognition> mappedRecognitions =
                                 new LinkedList<>();
 
@@ -408,7 +452,7 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                         // This for-loop below performs *detection* AND *transformation* for each
                         // concurrent app that's running.
 
-                        //detection: TF and CV
+                        // Implementation of Local Abstraction in Detection: TF and CV
                         List<Classifier.Recognition> dResults = new ArrayList<>();
                         List<Classifier.Recognition> cResults = new ArrayList<>();
                         CvDetector.QueryImage sResult = new CvDetector.QueryImage();
@@ -453,6 +497,9 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                                             cropToFrameTransform.mapRect(location);
                                             dResult.setLocation(location);
                                             appResults.add(dResult);
+
+                                            //object manager
+                                            manager.processDetection(app, dResult);
                                         }
                                     }
 /*
@@ -483,7 +530,7 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                                     }
                                     if (result == null) break;
 
-                                    result.setTitle(app.getName());
+                                    result.setTitle(app.getReference().getRefName());
 
                                     canvas.drawPath(result.getLocation().first, paint);
                                     cropToFrameTransform.mapRect(result.getLocation().second);
@@ -492,6 +539,8 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                                             minimumConfidence, result.getLocation().second);
                                     appResults.add(cvDetection);
 
+                                    //object manager
+                                    manager.processDetection(app, result);
                                     break;
 
                             }
@@ -501,6 +550,9 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                                         public void appCallback() {
                                             for (final Classifier.Recognition result: appResults) {
                                                 app.process(result, currTimestamp);
+                                                // Currently does nothing by calling to a null
+                                                // (process) method, but can insert here some piece
+                                                // of code that emulates some app tasks.
                                             }
                                         }
                                     }
@@ -511,9 +563,8 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
 
                         // pretty much rendering
                         tracker.trackResults(mappedRecognitions, luminanceCopy, currTimestamp);
-                        augmenter.trackResults(luminanceCopy, currTimestamp);
+                        //augmenter.trackResults(luminanceCopy, currTimestamp);
                         trackingOverlay.postInvalidate();
-                        //manager.refreshList();
 
                         requestRender();
                         computingDetection = false;
@@ -525,8 +576,9 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                     }
                 });
 
-    }
+        sharedAbstraction();
 
+    }
 
     @Override
     protected int getLayoutId() {

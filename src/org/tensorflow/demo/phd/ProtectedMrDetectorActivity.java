@@ -42,7 +42,6 @@ import org.tensorflow.demo.env.BorderedText;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.simulator.App;
-import org.tensorflow.demo.simulator.AppRandomizer;
 import org.tensorflow.demo.tracking.MultiBoxTracker;
 
 import java.io.IOException;

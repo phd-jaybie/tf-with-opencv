@@ -29,5 +29,6 @@
 
     <string name="activity_name_mr_detection">MR Detection</string>
     <string name="activity_name_mr_detection_with_abstraction">MR Detection w/ Abstraction</string>
+    <string name="activity_mr_detection_with_object_sharing">MR Detection w/ Shared Abstraction</string>
 
 </resources>

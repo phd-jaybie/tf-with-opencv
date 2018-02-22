@@ -21,6 +21,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -35,38 +36,23 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Trace;
-import android.support.v4.app.NavUtils;
-import android.util.Pair;
+import android.support.v4.app.FragmentActivity;
 import android.util.Size;
 import android.view.KeyEvent;
-import android.view.MenuItem;
 import android.view.Surface;
-import android.view.View;
 import android.view.WindowManager;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Spinner;
 import android.widget.Toast;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.List;
 
-import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfKeyPoint;
-import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.xfeatures2d.SIFT;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
+import org.tensorflow.demo.network.NetworkFragment;
 import org.tensorflow.demo.phd.MrObjectManager;
 import org.tensorflow.demo.simulator.App;
-import org.tensorflow.demo.simulator.AppRandomizer;
-import org.tensorflow.demo.simulator.Randomizer;
-import org.tensorflow.demo.MainActivity;
 import org.tensorflow.demo.simulator.SingletonAppList;
 
-public abstract class MrCameraActivity extends Activity
+public abstract class MrCameraActivity extends FragmentActivity
     implements OnImageAvailableListener, Camera.PreviewCallback {
 
   //temporarily deactivated spinner
@@ -98,6 +84,10 @@ public abstract class MrCameraActivity extends Activity
   private Runnable postInferenceCallback;
   private Runnable imageConverter;
 
+  // network variables
+  protected NetworkFragment mNetworkFragment;
+  protected AssetManager mAssets;
+
   // This is the Global object manager for MrObjects.
   protected static MrObjectManager manager;
 
@@ -125,6 +115,8 @@ public abstract class MrCameraActivity extends Activity
       requestPermission();
     }
 
+    AssetManager mAssets = this.getAssets();
+
     if (appList == null) {
       singletonAppList = SingletonAppList.getInstance();
       getAppList();
@@ -134,6 +126,12 @@ public abstract class MrCameraActivity extends Activity
 
     // creating an instance of the MrObjectManager
     if (manager == null) manager = new MrObjectManager();
+
+    // network activity
+    mNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(),
+            "http://192.168.43.98:8081");
+
+    mNetworkFragment.startServer(8081, mAssets);
 
   }
 

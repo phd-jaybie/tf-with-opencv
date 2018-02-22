@@ -51,7 +51,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
-import org.tensorflow.demo.R;
 
 /**
  * An activity that listens for audio and then uses a TensorFlow model to detect particular classes,

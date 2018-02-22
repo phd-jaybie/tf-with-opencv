@@ -1,12 +1,17 @@
 package org.tensorflow.demo;
 
-import android.app.ActionBar;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.util.Pair;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Switch;
@@ -16,6 +21,7 @@ import org.opencv.android.OpenCVLoader;
 import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.phd.MrDetectorActivity;
 import org.tensorflow.demo.phd.ProtectedMrDetectorActivity;
+import org.tensorflow.demo.phd.ProtectedMrDetectorActivityWithObjectManagement;
 import org.tensorflow.demo.simulator.App;
 import org.tensorflow.demo.simulator.AppRandomizer;
 import org.tensorflow.demo.simulator.Randomizer;
@@ -63,6 +69,33 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         initialize();
+
+        if (isNetworkConnected()) {
+            ProgressDialog mProgressDialog = new ProgressDialog(this);
+            mProgressDialog.setMessage("Please wait...");
+            mProgressDialog.setCancelable(false);
+            mProgressDialog.show();
+        } else {
+            noConnection();
+        }
+    }
+
+    private boolean isNetworkConnected() {
+        ConnectivityManager connMgr = (ConnectivityManager)
+                getSystemService(Context.CONNECTIVITY_SERVICE); // 1
+        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo(); // 2
+        return networkInfo != null && networkInfo.isConnected(); // 3
+    }
+
+    private void noConnection(){
+        new AlertDialog.Builder(this)
+                .setTitle("No Internet Connection")
+                .setMessage("It looks like your internet connection is off. Please turn it " +
+                        "on and try again")
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                    }
+                }).setIcon(android.R.drawable.ic_dialog_alert).show();
     }
 
     private void initialize() {
@@ -109,6 +142,12 @@ public class MainActivity extends Activity {
 
     }
 
+    public void onFastDebug(View view){
+        if (debugSwitch.isChecked()) debugSwitch.setTextColor(Color.BLACK);
+        else  debugSwitch.setTextColor(Color.LTGRAY);
+
+    }
+
     public void mrDetectionIntent(View view){
 
         if (singletonAppList.getList().isEmpty()) {
@@ -128,8 +167,20 @@ public class MainActivity extends Activity {
             return;
         }
 
-        Intent protectedDetectorIntent = new Intent(this, ProtectedMrDetectorActivity.class);
-        startActivity(protectedDetectorIntent);
+        Intent detectorIntent = new Intent(this, ProtectedMrDetectorActivity.class);
+        startActivity(detectorIntent);
+
+    }
+
+    public void mrDetectionIntentWithSharing(View view){
+
+        if (singletonAppList.getList().isEmpty()) {
+            textView.setText(firstMessage);
+            return;
+        }
+
+        Intent detectorIntent = new Intent(this, ProtectedMrDetectorActivityWithObjectManagement.class);
+        startActivity(detectorIntent);
 
     }
 

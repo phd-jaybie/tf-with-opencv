@@ -35,6 +35,7 @@ import org.tensorflow.demo.Classifier.Recognition;
 import org.tensorflow.demo.env.BorderedText;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
+import org.tensorflow.demo.network.NetworkListener;
 
 /**
  * A tracker wrapping ObjectTracker that also handles non-max suppression and matching existing

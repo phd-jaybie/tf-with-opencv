@@ -1,10 +1,15 @@
 package org.tensorflow.demo.phd;
 
+import android.util.Xml;
+
 import org.tensorflow.demo.Classifier;
+import org.tensorflow.demo.network.NetworkFragment;
+import org.tensorflow.demo.network.NetworkListener;
 import org.tensorflow.demo.phd.detector.cv.CvDetector;
 import org.tensorflow.demo.simulator.App;
-import org.tensorflow.demo.simulator.AppRandomizer;
+import org.xmlpull.v1.XmlSerializer;
 
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,7 +31,6 @@ public class MrObjectManager {
 
     public class MrObject {
 
-        private int id;
         private String name;
         //private String description;
         private String[] permissions;
@@ -34,10 +38,6 @@ public class MrObjectManager {
 
         public String getName() {
             return name;
-        }
-
-        public int getId() {
-            return id;
         }
 
         public String[] getPermissions() {
@@ -48,21 +48,18 @@ public class MrObjectManager {
             return privacyLabel;
         }
 
-        public MrObject(final int id, final String name, final String[] permissions,
+        public MrObject(final String name, final String[] permissions,
                         final String privacyLabel) {
-            this.id = id;
             this.name = name;
             this.permissions = permissions;
             this.privacyLabel = privacyLabel;
         }
 
         public MrObject(final MrObject object) {
-            this.id = object.getId();
             this.name = object.getName();
             this.permissions = object.getPermissions();
             this.privacyLabel = object.getPrivacyLabel();
         }
-
     }
 
     private boolean userPermitted(String appName, String object){
@@ -84,48 +81,105 @@ public class MrObjectManager {
         // This generates an initial list of MrObjects that is associated to this user.
         // Ideally, it also generates a list with objects associated with certain apps and other
         // users.
-        MrObjects = new ArrayList<>();
+        List<MrObject> fromStorage = new ArrayList<>();
+
+        // Get list from storage and add it to the live list.
+        MrObjects.addAll(fromStorage);
+
+        // We can also create a new list of sensitive objects from the pre-saved list of private
+        // objects of the user.
     }
 
     private void addMrObject(final MrObject object) {
-        // You can insert a code that prevents duplicate insertions.
-        MrObjects.add(object);
+
+        if (MrObjects.isEmpty()) MrObjects.add(object);
+        else {
+            for (MrObject mrObject : MrObjects){
+                if (mrObject.getName() != object.getName()) MrObjects.add(object);
+            }
+        }
     }
 
-    public void refreshList() {
+    public void refreshList(){
         // This refreshes the list of live MrObjects.
         // We can practically remove objects that have been added but has not been accessed for a
         // while or those that are past their time to live.
     }
 
-    public void processDetection(App app, Classifier.Recognition object) {
-        // check user preferences of what is the supposed sensitivity of this object
-        if (!userPermitted(app.getName(),object.getTitle())){
-            // if app is not allowed to see this object type, return
-            return;
+    public void refreshListFromNetwork(NetworkFragment networkFragment, NetworkListener networkListener) {
+
+/*        // Check for received objects over the network.
+        List<MrObject> fromNetwork = new ArrayList<>();
+        fromNetwork = networkFragment.getObjects(networkListener);
+
+        // Get list from storage and add it to the live list.
+        for (MrObject nObject : fromNetwork) {
+            for (MrObject mrObject : MrObjects){
+                if (mrObject.getName() != nObject.getName()) MrObjects.add(nObject);
+            }
         }
+
+        // Then refresh list.
+        refreshList();*/
+
+        // Then share some public objects.
+        List<MrObject> publicObjects = new ArrayList<>();
+        for (MrObject object: MrObjects) {
+            if (object.getPrivacyLabel() == "PUBLIC") publicObjects.add(object);
+        }
+
+        networkFragment.shareObjects(writeXml(publicObjects));
+    }
+
+    private String writeXml(List<MrObjectManager.MrObject> mrObjects){
+        XmlSerializer serializer = Xml.newSerializer();
+        StringWriter writer = new StringWriter();
+        try {
+            serializer.setOutput(writer);
+            serializer.startDocument("UTF-8", true);
+            serializer.startTag("", "MR-objects");
+            serializer.attribute("", "number", String.valueOf(mrObjects.size()));
+            for (MrObjectManager.MrObject object: mrObjects){
+                serializer.startTag("", "object");
+                serializer.startTag("", "name");
+                serializer.text(object.getName());
+                serializer.endTag("", "name");
+                serializer.endTag("", "object");
+            }
+            serializer.endTag("", "MR-objects");
+            serializer.endDocument();
+            return writer.toString();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void processDetection(App app, Classifier.Recognition object) {
+
+        // check user preferences of what is the supposed sensitivity of this object
+        // if app is not allowed to see this object type, return
+        //if (!userPermitted(app.getName(),object.getTitle())) return;
 
         // check object if in 'live' list
 
         // if not, add to live list
         String[] permissions = {app.getName()};
         String privacyLabel = getPrivacylabel(object.getTitle());
-        addMrObject(new MrObject(MrObjects.size() + 1,object.getTitle(),permissions,privacyLabel));
+        addMrObject(new MrObject(object.getTitle(),permissions,privacyLabel));
     }
 
     public void processDetection(App app, CvDetector.Recognition object) {
+
         // check user preferences of what is the supposed sensitivity of this object
-        if (!userPermitted(app.getName(),object.getTitle())){
-            // if app is not allowed to see this object type, return
-            return;
-        }
+        // if app is not allowed to see this object type, return
+        //if (!userPermitted(app.getName(),object.getTitle())) return;
 
         // check object if in 'live' list
 
         // if not, add to live list
         String[] permissions = {app.getName()};
         String privacyLabel = getPrivacylabel(object.getTitle());
-        addMrObject(new MrObject(MrObjects.size() + 1,object.getTitle(),permissions,privacyLabel));
+        addMrObject(new MrObject(object.getTitle(),permissions,privacyLabel));
     }
 
     public void storeList() {

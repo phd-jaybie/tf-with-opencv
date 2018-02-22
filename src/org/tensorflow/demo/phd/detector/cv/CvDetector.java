@@ -11,11 +11,7 @@ import android.util.Pair;
 
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfKeyPoint;
-import org.opencv.core.Point;
 import org.tensorflow.demo.simulator.AppRandomizer;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public interface CvDetector{
 

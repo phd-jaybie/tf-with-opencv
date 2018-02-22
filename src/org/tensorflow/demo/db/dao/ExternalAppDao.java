@@ -10,7 +10,6 @@ import android.arch.persistence.room.OnConflictStrategy;
 import android.arch.persistence.room.Query;
 
 import org.tensorflow.demo.db.entity.ExternalAppEntity;
-import org.tensorflow.demo.db.model.ExternalApp;
 
 import java.util.List;
 

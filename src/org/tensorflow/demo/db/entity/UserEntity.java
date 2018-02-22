@@ -5,8 +5,6 @@ package org.tensorflow.demo.db.entity;
  */
 
 import android.arch.persistence.room.Entity;
-import android.arch.persistence.room.ForeignKey;
-import android.arch.persistence.room.Index;
 import android.arch.persistence.room.PrimaryKey;
 
 import org.tensorflow.demo.db.model.User;
