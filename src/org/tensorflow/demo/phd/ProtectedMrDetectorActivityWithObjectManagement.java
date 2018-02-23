@@ -40,8 +40,8 @@ import org.tensorflow.demo.TensorFlowMultiBoxDetector;
 import org.tensorflow.demo.TensorFlowObjectDetectionAPIModel;
 import org.tensorflow.demo.TensorFlowYoloDetector;
 import org.tensorflow.demo.augmenting.Augmenter;
-import org.tensorflow.demo.network.NetworkFragment;
 import org.tensorflow.demo.network.NetworkListener;
+import org.tensorflow.demo.network.XmlOperator;
 import org.tensorflow.demo.phd.detector.cv.CvDetector;
 import org.tensorflow.demo.phd.detector.cv.OrbDetector;
 import org.tensorflow.demo.phd.detector.cv.SiftDetector;
@@ -62,8 +62,7 @@ import java.util.Vector;
  * An activity that follows Tensorflow's demo DetectorActivity class as template and implements
  * classical visual detection using OpenCV.
  */
-public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraActivity
-        implements OnImageAvailableListener, NetworkListener {
+public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraActivity {
 
     private static final Logger LOGGER = new Logger();
 
@@ -325,13 +324,14 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                     }
                 });
 
-        manager = new MrObjectManager();
+        //manager = new MrObjectManager();
+        //mNetworkFragment.setServerListener(this);
     }
 
     private void sharedAbstraction(){
         //if (isNetworkConnected())
             manager.
-                refreshListFromNetwork(mNetworkFragment,this);
+                refreshListFromNetwork(mNetworkFragment,receiveFlag);
         //else manager.refreshList();
     }
 
@@ -354,12 +354,8 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                 }).setIcon(android.R.drawable.ic_dialog_alert).show();
     }
 
-    @Override // part of the network listener
-    public void downloadComplete(){
-        // Do Whatever
-    }
 
-    @Override
+    @Override // part of MrCameraActivity
     protected void processImage() {
 
 /*        if (captureCount >= CAPTURE_TIMEOUT) {
@@ -499,7 +495,7 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                                             appResults.add(dResult);
 
                                             //object manager
-                                            manager.processDetection(app, dResult);
+                                            manager.processObject(app, dResult);
                                         }
                                     }
 /*
@@ -540,7 +536,7 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                                     appResults.add(cvDetection);
 
                                     //object manager
-                                    manager.processDetection(app, result);
+                                    manager.processObject(app, result);
                                     break;
 
                             }

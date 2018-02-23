@@ -148,8 +148,6 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
     private OverlayView augmentedOverlay;
     private Augmenter augmenter;
 
-    private MrObjectManager manager;
-
     @Override
     public void onPreviewSizeChosen(final Size size, final int rotation) {
         final float textSizePx =

@@ -1,10 +1,16 @@
 package org.tensorflow.demo.network;
 
+import java.util.List;
+
 /**
  * Created by deg032 on 22/2/18.
  */
 
 public interface NetworkListener {
 
-    void downloadComplete();
+    void setReceiveFlag(boolean value);
+
+    void uploadComplete();
+
+    void receivedFromNetwork(List<XmlOperator.XmlObject> objects);
 }

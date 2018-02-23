@@ -4,7 +4,10 @@ import android.content.res.AssetManager;
 import android.text.TextUtils;
 import android.util.Log;
 
+import org.tensorflow.demo.env.Logger;
+
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -14,6 +17,9 @@ import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by deg032 on 22/2/18.
@@ -22,7 +28,9 @@ import java.net.SocketException;
 public class NetworkServer implements Runnable {
 
     private static final String TAG = "SimpleWebServer";
+    private static final Logger LOGGER = new Logger();
 
+    private NetworkListener networkListener;
     /**
      * The port number we listen to
      */
@@ -51,12 +59,17 @@ public class NetworkServer implements Runnable {
         mAssets = assets;
     }
 
+    public void setNetworkListener(NetworkListener mNetworkListener){
+        networkListener = mNetworkListener;
+    }
+
     /**
      * This method starts the web server listening to the specified port.
      */
     public void start() {
         mIsRunning = true;
         new Thread(this).start();
+        LOGGER.d("Server started.");
     }
 
     /**
@@ -68,9 +81,10 @@ public class NetworkServer implements Runnable {
             if (null != mServerSocket) {
                 mServerSocket.close();
                 mServerSocket = null;
+                LOGGER.d("Server stopped.");
             }
         } catch (IOException e) {
-            Log.e(TAG, "Error closing the server socket.", e);
+            LOGGER.e(TAG, "Error closing the server socket.", e);
         }
     }
 
@@ -101,43 +115,63 @@ public class NetworkServer implements Runnable {
      * @throws IOException
      */
     private void handle(Socket socket) throws IOException {
+        XmlOperator xmlParser = new XmlOperator();
         BufferedReader reader = null;
-        PrintStream output = null;
+        PrintStream output = new PrintStream(socket.getOutputStream());
+
         try {
-            String route = null;
 
             // Read HTTP headers and parse out the route.
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            String line;
+
+            if (reader== null) return;
+
+            String line = reader.readLine();
+
+            if (!line.startsWith("POST")) return;
+
+            int contentLength = 0;
+
             while (!TextUtils.isEmpty(line = reader.readLine())) {
-                if (line.startsWith("GET /")) {
-                    int start = line.indexOf('/') + 1;
-                    int end = line.indexOf(' ', start);
-                    route = line.substring(start, end);
-                    break;
+                LOGGER.i(line);
+                if (line.startsWith("Content-Length:")) {
+                    int start = line.indexOf(':') + 2;
+                    contentLength = Integer.valueOf(line.substring(start, line.length()));
                 }
             }
 
-            // Output stream that we send the response to
-            output = new PrintStream(socket.getOutputStream());
+            StringBuilder body = new StringBuilder();
+            while (body.length() < contentLength) {
+                body.append((char) reader.read());
+            }
 
-            // Prepare the content to send.
-            if (null == route) {
+            // LOGGER.i("Body: " + body.toString());
+            InputStream is = new ByteArrayInputStream(body.toString().getBytes(StandardCharsets.UTF_8));
+
+            BufferedReader bodyReader = new BufferedReader(new InputStreamReader(is));
+            String bodyLine = null;
+            while (!TextUtils.isEmpty(bodyLine = bodyReader.readLine())) LOGGER.i("Body:" + bodyLine);
+
+            /*List fromNetwork = new ArrayList();
+
+            try {
+                fromNetwork = xmlParser.parse(is);
+                networkListener.receivedFromNetwork(fromNetwork);
+                networkListener.setReceiveFlag(true);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                networkListener.setReceiveFlag(false);
                 writeServerError(output);
                 return;
-            }
-            byte[] bytes = loadContent(route);
-            if (null == bytes) {
-                writeServerError(output);
-                return;
-            }
+            }*/
 
             // Send out the content.
             output.println("HTTP/1.0 200 OK");
-            output.println("Content-Type: " + detectMimeType(route));
+            /*output.println("Content-Type: " + detectMimeType(route));
             output.println("Content-Length: " + bytes.length);
             output.println();
-            output.write(bytes);
+            output.write(bytes);*/
             output.flush();
         } finally {
             if (null != output) {

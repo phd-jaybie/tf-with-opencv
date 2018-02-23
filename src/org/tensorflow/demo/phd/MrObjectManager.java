@@ -5,6 +5,7 @@ import android.util.Xml;
 import org.tensorflow.demo.Classifier;
 import org.tensorflow.demo.network.NetworkFragment;
 import org.tensorflow.demo.network.NetworkListener;
+import org.tensorflow.demo.network.XmlOperator;
 import org.tensorflow.demo.phd.detector.cv.CvDetector;
 import org.tensorflow.demo.simulator.App;
 import org.xmlpull.v1.XmlSerializer;
@@ -94,9 +95,13 @@ public class MrObjectManager {
 
         if (MrObjects.isEmpty()) MrObjects.add(object);
         else {
+            List<MrObject> fromNetworkList = new ArrayList<>();
+            // Check if object is already present on live list.
             for (MrObject mrObject : MrObjects){
-                if (mrObject.getName() != object.getName()) MrObjects.add(object);
+                if (mrObject.getName() == object.getName()) break;
+                fromNetworkList.add(object);
             }
+            MrObjects.addAll(fromNetworkList);
         }
     }
 
@@ -106,21 +111,27 @@ public class MrObjectManager {
         // while or those that are past their time to live.
     }
 
-    public void refreshListFromNetwork(NetworkFragment networkFragment, NetworkListener networkListener) {
+    public void refreshListFromNetwork(NetworkFragment networkFragment, boolean receiveFlag) {
 
-/*        // Check for received objects over the network.
-        List<MrObject> fromNetwork = new ArrayList<>();
-        fromNetwork = networkFragment.getObjects(networkListener);
+        // Check for received objects over the network.
+        if (receiveFlag) {
+            List<MrObject> fromNetwork = new ArrayList<>();
 
-        // Get list from storage and add it to the live list.
-        for (MrObject nObject : fromNetwork) {
-            for (MrObject mrObject : MrObjects){
-                if (mrObject.getName() != nObject.getName()) MrObjects.add(nObject);
+            fromNetwork = networkFragment.getObjects();
+
+            // Get list from network and add it to the live list.
+            if (fromNetwork!= null) {
+                for (MrObject nObject : fromNetwork) {
+                    for (MrObject mrObject : MrObjects) {
+                        if (mrObject.getName() != nObject.getName()) MrObjects.add(nObject);
+                    }
+                }
             }
+
+            // Then refresh list.
+            refreshList();
         }
 
-        // Then refresh list.
-        refreshList();*/
 
         // Then share some public objects.
         List<MrObject> publicObjects = new ArrayList<>();
@@ -154,7 +165,7 @@ public class MrObjectManager {
         }
     }
 
-    public void processDetection(App app, Classifier.Recognition object) {
+    public void processObject(App app, Classifier.Recognition object) {
 
         // check user preferences of what is the supposed sensitivity of this object
         // if app is not allowed to see this object type, return
@@ -168,7 +179,7 @@ public class MrObjectManager {
         addMrObject(new MrObject(object.getTitle(),permissions,privacyLabel));
     }
 
-    public void processDetection(App app, CvDetector.Recognition object) {
+    public void processObject(App app, CvDetector.Recognition object) {
 
         // check user preferences of what is the supposed sensitivity of this object
         // if app is not allowed to see this object type, return
@@ -180,9 +191,25 @@ public class MrObjectManager {
         String[] permissions = {app.getName()};
         String privacyLabel = getPrivacylabel(object.getTitle());
         addMrObject(new MrObject(object.getTitle(),permissions,privacyLabel));
+    }
+
+    public void processObject(XmlOperator.XmlObject object) {
+
+        // this adds the received objects from the Network to the live objects
+        // It is, however, preferrable, if there is an additional separate handling of the objects
+        // received from the network and the live objects.
+
+        // Also, we may configure the necessary privacy labels of these objects
+        String[] permissions = {object.description};
+        String privacyLabel = getPrivacylabel(object.getName());
+        addMrObject(new MrObject(object.getName(),permissions,privacyLabel));
     }
 
     public void storeList() {
         // when the app is closed, store the list before it is destroyed.
+    }
+
+    public int numberOfObjects(){
+        return MrObjects.size();
     }
 }

@@ -11,6 +11,7 @@ import android.util.Log;
 import android.util.Xml;
 
 
+import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.phd.MrObjectManager;
 import org.xmlpull.v1.XmlSerializer;
 
@@ -34,6 +35,8 @@ import javax.net.ssl.HttpsURLConnection;
 public class NetworkFragment extends Fragment {
 
     public static final String TAG = "NetworkFragment";
+    private static final Logger LOGGER = new Logger();
+
 
     private static final String URL_KEY = "UrlKey";
 
@@ -118,16 +121,6 @@ public class NetworkFragment extends Fragment {
         startNetwork(mUrlString);
     }
 
-
-
-    public void startServer(int mPort, AssetManager assets){
-        networkServer = new NetworkServer(mPort, assets);
-    }
-
-    public List<MrObjectManager.MrObject> getObjects(NetworkListener networkListener){
-        return null;
-    }
-
     /**
      * Cancel (and interrupt if necessary) any ongoing DownloadTask execution.
      */
@@ -137,6 +130,24 @@ public class NetworkFragment extends Fragment {
             mShareTask = null;
         }
     }
+
+    /**
+     * For listening to a port, we create a simple server that will do that.
+     */
+
+    public void startServer(int mPort, AssetManager assets){
+        networkServer = new NetworkServer(mPort, assets);
+    }
+
+    public void setServerListener(NetworkListener networkListener){
+        if (networkServer != null) networkServer.setNetworkListener(networkListener);
+    }
+
+    public List<MrObjectManager.MrObject> getObjects(){
+        // parse the XML file received and extract the objects.
+        return null;
+    }
+
 
     /**
      * Implementation of AsyncTask that runs a network operation on a background thread.
@@ -156,7 +167,7 @@ public class NetworkFragment extends Fragment {
         @Override
         protected void onPostExecute(String result) {
             try {
-                networkListener.downloadComplete();
+                networkListener.uploadComplete();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -198,11 +209,11 @@ public class NetworkFragment extends Fragment {
                 ;
                 conn.addRequestProperty("Content-length", payload.getBytes().length+ "");
 
-                conn.connect();
+                //conn.connect();
 
                 OutputStream outputBuff = new BufferedOutputStream(conn.getOutputStream());
 
-                Log.d(TAG, "Sharing objects to remote.");
+                LOGGER.d("Sharing objects to remote.");
 
                 try {
                     //showToast("Uploaded to: " + mURL.toString());

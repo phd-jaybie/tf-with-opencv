@@ -48,16 +48,20 @@ import java.util.List;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.network.NetworkFragment;
+import org.tensorflow.demo.network.NetworkListener;
+import org.tensorflow.demo.network.XmlOperator;
 import org.tensorflow.demo.phd.MrObjectManager;
 import org.tensorflow.demo.simulator.App;
 import org.tensorflow.demo.simulator.SingletonAppList;
 
 public abstract class MrCameraActivity extends FragmentActivity
-    implements OnImageAvailableListener, Camera.PreviewCallback {
+    implements OnImageAvailableListener, Camera.PreviewCallback, NetworkListener {
 
   //temporarily deactivated spinner
 
   private static final Logger LOGGER = new Logger();
+  protected static boolean receiveFlag = false;
+
 
   private static final int PERMISSIONS_REQUEST = 1;
 
@@ -132,6 +136,7 @@ public abstract class MrCameraActivity extends FragmentActivity
             "http://192.168.43.98:8081");
 
     mNetworkFragment.startServer(8081, mAssets);
+    mNetworkFragment.setServerListener(this);
 
   }
 
@@ -512,6 +517,23 @@ public abstract class MrCameraActivity extends FragmentActivity
         return 90;
       default:
         return 0;
+    }
+  }
+
+  @Override // part of the network listener
+  public void setReceiveFlag(boolean value){
+    receiveFlag = value;
+  }
+
+  @Override // part of the network listener
+  public void uploadComplete(){
+    // Do something here.
+  }
+
+  @Override // part of the network listener
+  public void receivedFromNetwork(List<XmlOperator.XmlObject> objects){
+    for (XmlOperator.XmlObject object: objects) {
+      manager.processObject(object);
     }
   }
 
