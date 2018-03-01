@@ -188,7 +188,11 @@ public class SiftDetector implements CvDetector{
                 // Find homography - here just used to perform match filtering with RANSAC, but could be used to e.g. stitch images
                 // the smaller the allowed reprojection error (here 15), the more matches are filtered
                 Mat Homog = Calib3d.findHomography(rPtsMat, mPtsMat, Calib3d.RANSAC, 15, outputMask, 2000, 0.995);
-                Core.perspectiveTransform(obj_corners,scene_corners,Homog);
+                try {
+                    Core.perspectiveTransform(obj_corners,scene_corners,Homog);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
                 MatOfPoint sceneCorners = new MatOfPoint();
                 for (int i=0; i < scene_corners.rows(); i++) {

@@ -156,8 +156,6 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
     private OverlayView augmentedOverlay;
     private Augmenter augmenter;
 
-    private MrObjectManager manager;
-
     @Override
     public void onPreviewSizeChosen(final Size size, final int rotation) {
         final float textSizePx =
@@ -553,6 +551,8 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                                         }
                                     }
                             );
+
+                            mappedRecognitions.addAll(appResults);
                         }
 
                         lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;

@@ -45,6 +45,7 @@ public class MainActivity extends Activity {
     private int numberOfApps;
     public List<App> appList = new ArrayList<>();
     public String appListText;
+    private boolean hasList = false;
 
     private SingletonAppList singletonAppList;
     private TextView textView;
@@ -68,12 +69,12 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        initialize();
+        initialize(); //Initializes the views
 
         if (isNetworkConnected()) {
             ProgressDialog mProgressDialog = new ProgressDialog(this);
             mProgressDialog.setMessage("Please wait...");
-            mProgressDialog.setCancelable(false);
+            mProgressDialog.setCancelable(true);
             mProgressDialog.show();
         } else {
             noConnection();
@@ -95,7 +96,7 @@ public class MainActivity extends Activity {
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
                     }
-                }).setIcon(android.R.drawable.ic_dialog_alert).show();
+                });//.setIcon(android.R.drawable.ic_dialog_alert).show();
     }
 
     private void initialize() {
@@ -103,6 +104,9 @@ public class MainActivity extends Activity {
         numberText = (EditText) findViewById(R.id.number_of_apps);
         debugSwitch = (Switch) findViewById(R.id.debug_toggle);
         singletonAppList = SingletonAppList.getInstance();
+
+        // Checking for available generated app list.
+        hasList = checkList();
     }
 
     public void generateAppList(View view){
@@ -121,7 +125,8 @@ public class MainActivity extends Activity {
 
                 message = message + "Creating a new " + numberOfApps + "-app list.\n";
                 LOGGER.i(message);
-                textView.setText(message);
+
+                writeToTextView(message);
 
                 randomizer = AppRandomizer.create();
                 appList = randomizer.appGenerator(getApplicationContext(), numberOfApps);
@@ -133,13 +138,37 @@ public class MainActivity extends Activity {
                 LOGGER.i(appLogMessage);
                 appListText = appLogMessage;
 
-                textView.setText(message + appLogMessage);
+                writeToTextView(message + appLogMessage);
                 singletonAppList.setList(appList);
                 singletonAppList.setListText(appListText);
                 singletonAppList.setFastDebug(debugSwitch.isChecked());
             }
         });
 
+    }
+
+    private boolean checkList(){
+
+        if (singletonAppList.getList().isEmpty()) {
+
+            writeToTextView(firstMessage);
+            return false;
+        } else {
+            writeToTextView(singletonAppList.getListText());
+            return true;
+        }
+
+    }
+
+    private void writeToTextView(final String message){
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (textView == null) textView = (TextView) findViewById(R.id.generate_textView);
+                textView.setText(message);
+            }
+        });
     }
 
     public void onFastDebug(View view){
@@ -150,10 +179,7 @@ public class MainActivity extends Activity {
 
     public void mrDetectionIntent(View view){
 
-        if (singletonAppList.getList().isEmpty()) {
-            textView.setText(firstMessage);
-            return;
-        }
+        if (!checkList()) return;
 
         Intent detectorIntent = new Intent(this, MrDetectorActivity.class);
         startActivity(detectorIntent);
@@ -162,10 +188,7 @@ public class MainActivity extends Activity {
 
     public void mrDetectionIntentProtected(View view){
 
-        if (singletonAppList.getList().isEmpty()) {
-            textView.setText(firstMessage);
-            return;
-        }
+        if (!checkList()) return;
 
         Intent detectorIntent = new Intent(this, ProtectedMrDetectorActivity.class);
         startActivity(detectorIntent);
@@ -174,10 +197,7 @@ public class MainActivity extends Activity {
 
     public void mrDetectionIntentWithSharing(View view){
 
-        if (singletonAppList.getList().isEmpty()) {
-            textView.setText(firstMessage);
-            return;
-        }
+        if (!checkList()) return;
 
         Intent detectorIntent = new Intent(this, ProtectedMrDetectorActivityWithObjectManagement.class);
         startActivity(detectorIntent);

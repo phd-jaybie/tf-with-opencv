@@ -288,10 +288,11 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                         }
                         lines.add("");
 
+                        lines.add("Running " + singletonAppList.getList().size() + " apps");
                         lines.add("Frame: " + previewWidth + "x" + previewHeight);
                         lines.add("Crop: " + copy.getWidth() + "x" + copy.getHeight());
                         lines.add("View: " + canvas.getWidth() + "x" + canvas.getHeight());
-                        lines.add("Rotation: " + sensorOrientation);
+                        //lines.add("Rotation: " + sensorOrientation);
                         lines.add("Inference time: " + lastProcessingTimeMs + "ms");
 
                         borderedText.drawLines(canvas, 10, canvas.getHeight() - 10, lines);
@@ -503,6 +504,8 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                                         }
                                     }
                             );
+
+                            mappedRecognitions.addAll(appResults);
                         }
 
                         lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
