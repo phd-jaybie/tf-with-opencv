@@ -37,11 +37,6 @@ import static org.tensorflow.demo.MrCameraActivity.MIN_MATCH_COUNT;
 public class OrbDetector implements CvDetector{
     private static final Logger LOGGER = new Logger();
 
-    public static OrbDetector create() {
-        final OrbDetector detector = new OrbDetector();
-        return detector;
-    }
-
     @Override
     public QueryImage imageDetector(Bitmap bitmap){
 

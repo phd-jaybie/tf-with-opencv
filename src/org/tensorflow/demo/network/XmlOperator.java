@@ -1,7 +1,9 @@
 package org.tensorflow.demo.network;
 
+import android.graphics.RectF;
 import android.util.Xml;
 
+import org.tensorflow.demo.Classifier;
 import org.tensorflow.demo.env.Logger;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -22,8 +24,8 @@ public class XmlOperator {
     private static final String ns = null;
 
     public class XmlObject {
-        public final String name;
-        public final String description;
+        private final String name;
+        private final String description;
 
         public String getName() {
             return name;
@@ -51,10 +53,23 @@ public class XmlOperator {
         }
     }
 
-    private List readFeed(XmlPullParser parser) throws XmlPullParserException, IOException {
-        List entries = new ArrayList();
+    public List parse(InputStream in, int height, int width) throws XmlPullParserException, IOException {
+        try {
+            XmlPullParser parser = Xml.newPullParser();
+            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
+            parser.setInput(in, null);
+            parser.nextTag();
+            return readFeed(parser, height, width);
+        } finally {
+            in.close();
+        }
+    }
 
-        parser.require(XmlPullParser.START_TAG, ns, "MR-objects");
+    private List readFeed(XmlPullParser parser, int height, int width) throws XmlPullParserException, IOException {
+        List<Classifier.Recognition> entries = new ArrayList();
+
+        Integer count = 0;
+        parser.require(XmlPullParser.START_TAG, ns, "mr_objects");
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.getEventType() != XmlPullParser.START_TAG) {
                 continue;
@@ -62,7 +77,29 @@ public class XmlOperator {
             String name = parser.getName();
             // Starts by looking for the entry tag
             if (name.equals("object")) {
-                entries.add(readEntry(parser));
+                entries.add(readEntry(parser,count, height, width));
+                count++;
+            } else {
+                skip(parser);
+            }
+        }
+        return entries;
+    }
+
+    private List readFeed(XmlPullParser parser) throws XmlPullParserException, IOException {
+        List<Classifier.Recognition> entries = new ArrayList();
+
+        Integer count = 0;
+        parser.require(XmlPullParser.START_TAG, ns, "mr_objects");
+        while (parser.next() != XmlPullParser.END_TAG) {
+            if (parser.getEventType() != XmlPullParser.START_TAG) {
+                continue;
+            }
+            String name = parser.getName();
+            // Starts by looking for the entry tag
+            if (name.equals("object")) {
+                //entries.add(readDetection(parser,count));
+                count++;
             } else {
                 skip(parser);
             }
@@ -72,28 +109,47 @@ public class XmlOperator {
 
     // Parses the contents of an entry. If it encounters a title, summary, or link tag, hands them off
 // to their respective "read" methods for processing. Otherwise, skips the tag.
-    private XmlObject readEntry(XmlPullParser parser) throws XmlPullParserException, IOException {
+    private Classifier.Recognition readEntry(XmlPullParser parser, int id, int height, int width) throws XmlPullParserException, IOException {
 
         parser.require(XmlPullParser.START_TAG, ns, "object");
-        String name = null;
-        String description = null;
+        String name;
+        String title = null;
+        float confidence = 0;
+        float left = 0;
+        float right = 0;
+        float top = 0;
+        float bottom = 0;
+
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.getEventType() != XmlPullParser.START_TAG) {
                 continue;
             }
             String parserName = parser.getName();
-            if (parserName.equals("title")) {
+            if (parserName.equals("name")) {
                 name = readName(parser);
-            } else if (parserName.equals("summary")) {
-                description = readDescription(parser);
+                String[] parts = name.split(":",2);
+                title = parts[0].replace("['","");
+                String conf = parts[1].replace("%']","");
+                confidence = (Float.parseFloat(conf))/100;
+            } else if (parserName.equals("xmin")) {
+                left = readNumber(parser,"xmin");
+            } else if (parserName.equals("ymin")) {
+                top = readNumber(parser, "ymin");
+            } else if (parserName.equals("xmax")) {
+                right = readNumber(parser, "xmax");
+            } else if (parserName.equals("ymax")) {
+                bottom = readNumber(parser, "ymax");
             } else {
                 skip(parser);
             }
         }
-        return new XmlObject(name, description);
+
+        final RectF location =
+                new RectF(left*width,top*height, right*width, bottom*height);
+        return new Classifier.Recognition(""+id,title,confidence, location);
     }
 
-    // Processes title tags in the feed.
+    // Processes name tags in the feed.
     private String readName(XmlPullParser parser) throws IOException, XmlPullParserException {
         parser.require(XmlPullParser.START_TAG, ns, "name");
         String title = readText(parser);
@@ -101,12 +157,19 @@ public class XmlOperator {
         return title;
     }
 
-    // Processes summary tags in the feed.
+    // Processes description tags in the feed.
     private String readDescription(XmlPullParser parser) throws IOException, XmlPullParserException {
         parser.require(XmlPullParser.START_TAG, ns, "description");
         String summary = readText(parser);
         parser.require(XmlPullParser.END_TAG, ns, "description");
         return summary;
+    }
+
+    private float readNumber(XmlPullParser parser, String tag) throws IOException, XmlPullParserException {
+        parser.require(XmlPullParser.START_TAG, ns, tag);
+        float value = Float.parseFloat(readText(parser));
+        parser.require(XmlPullParser.END_TAG, ns, tag);
+        return value;
     }
 
     // For the tag name, extracts its text values.

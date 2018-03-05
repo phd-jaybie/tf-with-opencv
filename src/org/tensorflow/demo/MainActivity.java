@@ -21,7 +21,7 @@ import org.opencv.android.OpenCVLoader;
 import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.phd.MrDetectorActivity;
 import org.tensorflow.demo.phd.ProtectedMrDetectorActivity;
-import org.tensorflow.demo.phd.ProtectedMrDetectorActivityWithObjectManagement;
+import org.tensorflow.demo.phd.ProtectedMrDetectorActivityWithNetwork;
 import org.tensorflow.demo.simulator.App;
 import org.tensorflow.demo.simulator.AppRandomizer;
 import org.tensorflow.demo.simulator.Randomizer;
@@ -51,6 +51,7 @@ public class MainActivity extends Activity {
     private TextView textView;
     private EditText numberText;
     private Switch debugSwitch; // This switch just tells the processing activities if captures are limited or not.
+    private Switch networkSwitch; // This switch just tells whether the detection is local or remote.
 
 
     public final String firstMessage = "Generate App list first";
@@ -103,6 +104,7 @@ public class MainActivity extends Activity {
         textView = (TextView) findViewById(R.id.generate_textView);
         numberText = (EditText) findViewById(R.id.number_of_apps);
         debugSwitch = (Switch) findViewById(R.id.debug_toggle);
+        networkSwitch = (Switch) findViewById(R.id.network_toggle);
         singletonAppList = SingletonAppList.getInstance();
 
         // Checking for available generated app list.
@@ -177,6 +179,11 @@ public class MainActivity extends Activity {
 
     }
 
+    public void onNetworkProcess(View view){
+        if (networkSwitch.isChecked()) networkSwitch.setTextColor(Color.BLACK);
+        else  networkSwitch.setTextColor(Color.LTGRAY);
+    }
+
     public void mrDetectionIntent(View view){
 
         if (!checkList()) return;
@@ -199,7 +206,8 @@ public class MainActivity extends Activity {
 
         if (!checkList()) return;
 
-        Intent detectorIntent = new Intent(this, ProtectedMrDetectorActivityWithObjectManagement.class);
+        Intent detectorIntent = new Intent(this, ProtectedMrDetectorActivityWithNetwork.class);
+        if (networkSwitch.isChecked()) detectorIntent.putExtra("NetworkMode","REMOTE_PROCESS");
         startActivity(detectorIntent);
 
     }

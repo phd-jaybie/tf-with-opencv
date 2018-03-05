@@ -13,6 +13,7 @@ package org.tensorflow.demo.phd;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
@@ -22,8 +23,8 @@ import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.RectF;
 import android.graphics.Typeface;
-import android.media.ImageReader.OnImageAvailableListener;
 import android.net.ConnectivityManager;
+import android.net.Network;
 import android.net.NetworkInfo;
 import android.os.SystemClock;
 import android.util.Size;
@@ -40,8 +41,7 @@ import org.tensorflow.demo.TensorFlowMultiBoxDetector;
 import org.tensorflow.demo.TensorFlowObjectDetectionAPIModel;
 import org.tensorflow.demo.TensorFlowYoloDetector;
 import org.tensorflow.demo.augmenting.Augmenter;
-import org.tensorflow.demo.network.NetworkListener;
-import org.tensorflow.demo.network.XmlOperator;
+import org.tensorflow.demo.network.RemoteDetector;
 import org.tensorflow.demo.phd.detector.cv.CvDetector;
 import org.tensorflow.demo.phd.detector.cv.OrbDetector;
 import org.tensorflow.demo.phd.detector.cv.SiftDetector;
@@ -62,7 +62,7 @@ import java.util.Vector;
  * An activity that follows Tensorflow's demo DetectorActivity class as template and implements
  * classical visual detection using OpenCV.
  */
-public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraActivity {
+public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
 
     private static final Logger LOGGER = new Logger();
 
@@ -130,8 +130,10 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
 
     private Classifier detector; //for TF detection
     private Classifier classifier; //for TF classification
+    private Classifier remoteDetector;
     private SiftDetector siftDetector; //for OpenCV detection
     private OrbDetector orbDetector;
+    private static String NetworkMode;
 
     private long lastProcessingTimeMs;
     private Bitmap rgbFrameBitmap = null;
@@ -169,7 +171,7 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
 
         // setting up a TF detector (a TF OD type)
         int cropSize = TF_OD_API_INPUT_SIZE;
-        if (MODE == ProtectedMrDetectorActivityWithObjectManagement.DetectorMode.YOLO) {
+        if (MODE == ProtectedMrDetectorActivityWithNetwork.DetectorMode.YOLO) {
             detector =
                     TensorFlowYoloDetector.create(
                             getAssets(),
@@ -179,7 +181,7 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                             YOLO_OUTPUT_NAMES,
                             YOLO_BLOCK_SIZE);
             cropSize = YOLO_INPUT_SIZE;
-        } else if (MODE == ProtectedMrDetectorActivityWithObjectManagement.DetectorMode.MULTIBOX) {
+        } else if (MODE == ProtectedMrDetectorActivityWithNetwork.DetectorMode.MULTIBOX) {
             detector =
                     TensorFlowMultiBoxDetector.create(
                             getAssets(),
@@ -226,6 +228,9 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
          */
         siftDetector = new SiftDetector();
         orbDetector = new OrbDetector();
+        remoteDetector = RemoteDetector.create();
+
+        NetworkMode = getIntent().getStringExtra("NetworkMode");
 
         previewWidth = size.getWidth();
         previewHeight = size.getHeight();
@@ -448,10 +453,15 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
 
                         // Implementation of Local Abstraction in Detection: TF and CV
                         List<Classifier.Recognition> dResults = new ArrayList<>();
-                        List<Classifier.Recognition> cResults = new ArrayList<>();
+                        //List<Classifier.Recognition> cResults = new ArrayList<>();
                         CvDetector.QueryImage sResult = new CvDetector.QueryImage();
                         CvDetector.QueryImage oResult = new CvDetector.QueryImage();
-                        if (appListText.contains("MULTIBOX")) dResults = detector.recognizeImage(croppedBitmap);
+                        if (appListText.contains("MULTIBOX")) {
+                            //if (NetworkMode == "REMOTE_PROCESS")
+                            dResults = remoteDetector.recognizeImage(croppedBitmap);
+                            //else
+                            //    dResults = detector.recognizeImage(croppedBitmap);
+                        }
                         if (appListText.contains("SIFT")) sResult = siftDetector.imageDetector(croppedBitmap);
                         if (appListText.contains("ORB")) oResult = orbDetector.imageDetector(croppedBitmap);
 
@@ -481,6 +491,7 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                                     //transformation
                                     /*switch (app.getMethod().second) {
                                         case "MULTIBOX":*/
+                                    if (dResults == null) break;
                                     for (final Classifier.Recognition dResult : dResults) {
                                         final RectF location = dResult.getLocation();
                                         if (location != null && dResult.getConfidence() >= minimumConfidence) {
@@ -493,7 +504,7 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                                             appResults.add(dResult);
 
                                             //object manager
-                                            manager.processObject(app, dResult);
+                                            //manager.processObject(app, dResult);
                                         }
                                     }
 /*
@@ -534,7 +545,7 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                                     appResults.add(cvDetection);
 
                                     //object manager
-                                    manager.processObject(app, result);
+                                    //manager.processObject(app, result);
                                     break;
 
                             }
@@ -572,7 +583,7 @@ public class ProtectedMrDetectorActivityWithObjectManagement extends MrCameraAct
                     }
                 });
 
-        sharedAbstraction();
+        //sharedAbstraction();
 
     }
 

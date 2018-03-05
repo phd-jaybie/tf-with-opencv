@@ -200,7 +200,7 @@ public class MrObjectManager {
         // received from the network and the live objects.
 
         // Also, we may configure the necessary privacy labels of these objects
-        String[] permissions = {object.description};
+        String[] permissions = {object.getDescription()};
         String privacyLabel = getPrivacylabel(object.getName());
         addMrObject(new MrObject(object.getName(),permissions,privacyLabel));
     }

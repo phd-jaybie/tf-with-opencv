@@ -148,11 +148,13 @@ public class DetectorActivity extends MrCameraActivity implements OnImageAvailab
               MB_OUTPUT_LOCATIONS_NAME,
               MB_OUTPUT_SCORES_NAME);
       cropSize = MB_INPUT_SIZE;
+      LOGGER.i("Using Multi-box Detector");
     } else {
       try {
         detector = TensorFlowObjectDetectionAPIModel.create(
             getAssets(), TF_OD_API_MODEL_FILE, TF_OD_API_LABELS_FILE, TF_OD_API_INPUT_SIZE);
         cropSize = TF_OD_API_INPUT_SIZE;
+        LOGGER.i("Using Object Detector");
       } catch (final IOException e) {
         LOGGER.e("Exception initializing classifier!", e);
         Toast toast =

@@ -24,6 +24,7 @@
     <string name="activity_name_speech">TF Speech</string>
 
     <string name="toggle_fast_debug">Fast Debug</string>
+    <string name="toggle_network_debug">Remote Process</string>
     <string name="button_generate">Generate</string>
     <string name="number_of_apps">Number of Apps</string>
 

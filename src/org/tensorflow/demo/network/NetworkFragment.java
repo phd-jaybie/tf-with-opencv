@@ -1,19 +1,17 @@
 package org.tensorflow.demo.network;
 
 import android.content.res.AssetManager;
+import android.graphics.Bitmap;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.util.Log;
-import android.util.Xml;
 
 
 import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.phd.MrObjectManager;
-import org.xmlpull.v1.XmlSerializer;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -21,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
@@ -41,11 +38,18 @@ public class NetworkFragment extends Fragment {
     private static final String URL_KEY = "UrlKey";
 
     private NetworkListener networkListener;
-    private ShareTask mShareTask;
+    private NetworkTask mNetworkTask;
     private String mUrlString;
 
     private NetworkServer networkServer;
-    private String mPayload;
+    private String mXmlPayload;
+    private byte[] mBytesPayload;
+
+    private enum NetworkMode {
+        XML_SHARE, REMOTE_PROCESSOR;
+    }
+
+    private static NetworkMode MODE;
 
     /**
      * Static initializer for NetworkFragment that sets the URL of the host it will be downloading
@@ -108,14 +112,30 @@ public class NetworkFragment extends Fragment {
      */
     public void startNetwork(String mUrl) {
         cancelDownload();
-        mShareTask = new ShareTask();
-        mShareTask.execute(mUrl);
+        mNetworkTask = new NetworkTask();
+        mNetworkTask.execute(mUrl);
     }
 
-    public void shareObjects(String payload){
+    /**
+     * Shares the stored objects in this users 'live' object space.
+     * */
+    public void shareObjects(String Xmlpayload){
         // Convert the list of public objects to an XML. Then send out.
-        mPayload = payload;
+        mXmlPayload = Xmlpayload;
+        MODE = NetworkMode.XML_SHARE;
 
+        // Instead of using a single URL, a list of URLs can be iterated and used.
+        // For the meantime, we use a single URL.
+        startNetwork(mUrlString);
+    }
+
+    /**
+     * This one uploads the raw image to a server for processing. And receives the object locations.
+     */
+    public void remoteImageProcessing(byte[] payload){
+        // Convert the list of public objects to an XML. Then send out.
+        mBytesPayload = payload;
+        MODE = NetworkMode.REMOTE_PROCESSOR;
         // Instead of using a single URL, a list of URLs can be iterated and used.
         // For the meantime, we use a single URL.
         startNetwork(mUrlString);
@@ -125,9 +145,9 @@ public class NetworkFragment extends Fragment {
      * Cancel (and interrupt if necessary) any ongoing DownloadTask execution.
      */
     public void cancelDownload() {
-        if (mShareTask != null) {
-            mShareTask.cancel(true);
-            mShareTask = null;
+        if (mNetworkTask != null) {
+            mNetworkTask.cancel(true);
+            mNetworkTask = null;
         }
     }
 
@@ -152,12 +172,13 @@ public class NetworkFragment extends Fragment {
     /**
      * Implementation of AsyncTask that runs a network operation on a background thread.
      */
-    private class ShareTask extends AsyncTask<String, Void, String> {
+    private class NetworkTask extends AsyncTask<String, Void, String> {
 
         @Override
         protected String doInBackground(String... params) {
             try {
-                return uploadData(params[0]);
+                if (MODE == NetworkMode.XML_SHARE) return shareData(params[0]);
+                else return processImage(params[0]);
             } catch (IOException e) {
                 e.printStackTrace();
                 return null;
@@ -173,8 +194,8 @@ public class NetworkFragment extends Fragment {
             }
         }
 
-        private String uploadData(String urlString) throws IOException {
-            final String payload = mPayload;
+        private String shareData(String urlString) throws IOException {
+            final String payload = mXmlPayload;
 
             URL url = new URL(urlString);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -206,8 +227,7 @@ public class NetworkFragment extends Fragment {
                 conn.setRequestProperty("Accept-Encoding", "identity");
                 conn.setRequestProperty("Connection", "Keep-Alive");
                 conn.setRequestProperty("Content-type", "xml");
-                ;
-                conn.addRequestProperty("Content-length", payload.getBytes().length+ "");
+                conn.addRequestProperty("Content-length", payload.getBytes().length + "");
 
                 //conn.connect();
 
@@ -249,6 +269,69 @@ public class NetworkFragment extends Fragment {
             return "Success";
         }
 
+
+        private String processImage(String urlString) throws IOException {
+            final byte[] payload = mBytesPayload;
+
+            URL url = new URL(urlString);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+            String result;
+
+            try {
+                InputStream inputStream = null;
+
+                long time = System.currentTimeMillis();
+
+                conn.setDoOutput(true);
+                conn.setDoInput(true);
+                conn.setChunkedStreamingMode(0);
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Accept-Encoding", "identity");
+                conn.setRequestProperty("Connection", "Keep-Alive");
+                conn.setRequestProperty("Content-type", "image/jpeg");
+                conn.addRequestProperty("Content-length", payload.length + "");
+
+                //conn.connect();
+
+                OutputStream outputBuff = new BufferedOutputStream(conn.getOutputStream());
+
+                LOGGER.d("Uploading image for remote processing.");
+
+                try {
+                    //showToast("Uploaded to: " + mURL.toString());
+                    outputBuff.write(payload);
+                    //Log.d(TAG, "Uploaded.");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    outputBuff.close();
+                }
+
+                int responseCode = conn.getResponseCode();
+                String responseLength = conn.getHeaderField("Content-length");
+
+                if (responseCode != HttpsURLConnection.HTTP_OK) {
+                    throw new IOException("HTTP error code: " + responseCode);
+                }
+
+                try {
+                    inputStream = conn.getInputStream();
+                    result = readStream(inputStream, responseLength);
+                    LOGGER.v("Received from remote: " + result);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                conn.disconnect();
+            }
+
+            return "Success";
+        }
+
         private String convertToString(InputStream is) throws IOException {
             BufferedReader r = new BufferedReader(new InputStreamReader(is));
             StringBuilder total = new StringBuilder();
@@ -259,6 +342,33 @@ public class NetworkFragment extends Fragment {
             return new String(total);
         }
 
+        private String readStream(InputStream stream, String length) throws IOException {
+            int maxLength = Integer.valueOf(length);
+            String result = null;
+
+            // Read InputStream using the UTF-8 charset.
+            InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
+
+            // Create temporary buffer to hold Stream data with specified max length.
+            char[] buffer = new char[maxLength];
+            // Populate temporary buffer with Stream data.
+            int numChars = 0;
+            int readSize = 0;
+            while (numChars < maxLength && readSize != -1) {
+                numChars += readSize;
+                readSize = reader.read(buffer, numChars, buffer.length - numChars);
+            }
+            if (numChars != -1) {
+                // The stream was not empty.
+                // Create String that is actual length of response body if actual length was less than
+                // max length.
+                numChars = Math.min(numChars, maxLength);
+                result = new String(buffer, 0, numChars);
+            }
+            //String[] results = result.split("\n");
+            return result;
+
+        }
     }
 
 }
