@@ -30,7 +30,7 @@ public class NetworkServer implements Runnable {
     private static final String TAG = "SimpleWebServer";
     private static final Logger LOGGER = new Logger();
 
-    private NetworkListener networkListener;
+    private static NetworkListener networkListener;
     /**
      * The port number we listen to
      */

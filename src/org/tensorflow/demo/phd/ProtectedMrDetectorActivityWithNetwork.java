@@ -327,8 +327,6 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                     }
                 });
 
-        //manager = new MrObjectManager();
-        //mNetworkFragment.setServerListener(this);
     }
 
     private void sharedAbstraction(){
@@ -504,7 +502,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                                             appResults.add(dResult);
 
                                             //object manager
-                                            //manager.processObject(app, dResult);
+                                            manager.processObject(app, dResult);
                                         }
                                     }
 /*
@@ -545,7 +543,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                                     appResults.add(cvDetection);
 
                                     //object manager
-                                    //manager.processObject(app, result);
+                                    manager.processObject(app, result);
                                     break;
 
                             }
@@ -583,7 +581,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                     }
                 });
 
-        //sharedAbstraction();
+        sharedAbstraction();
 
     }
 

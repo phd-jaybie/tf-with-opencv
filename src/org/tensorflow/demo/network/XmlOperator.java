@@ -35,12 +35,13 @@ public class XmlOperator {
             return description;
         }
 
-        private XmlObject(String name, String description) {
+        public XmlObject(String name, String description) {
             this.name = name;
             this.description = description;
         }
     }
 
+    // parser for regular objects from an XML
     public List parse(InputStream in) throws XmlPullParserException, IOException {
         try {
             XmlPullParser parser = Xml.newPullParser();
@@ -53,19 +54,20 @@ public class XmlOperator {
         }
     }
 
+    // parser for remote detection recognitions in an XML
     public List parse(InputStream in, int height, int width) throws XmlPullParserException, IOException {
         try {
             XmlPullParser parser = Xml.newPullParser();
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
             parser.setInput(in, null);
             parser.nextTag();
-            return readFeed(parser, height, width);
+            return readRecognitions(parser, height, width);
         } finally {
             in.close();
         }
     }
 
-    private List readFeed(XmlPullParser parser, int height, int width) throws XmlPullParserException, IOException {
+    private List readRecognitions(XmlPullParser parser, int height, int width) throws XmlPullParserException, IOException {
         List<Classifier.Recognition> entries = new ArrayList();
 
         Integer count = 0;
@@ -77,7 +79,7 @@ public class XmlOperator {
             String name = parser.getName();
             // Starts by looking for the entry tag
             if (name.equals("object")) {
-                entries.add(readEntry(parser,count, height, width));
+                entries.add(readDetection(parser,count, height, width));
                 count++;
             } else {
                 skip(parser);
@@ -87,7 +89,7 @@ public class XmlOperator {
     }
 
     private List readFeed(XmlPullParser parser) throws XmlPullParserException, IOException {
-        List<Classifier.Recognition> entries = new ArrayList();
+        List<XmlObject> entries = new ArrayList();
 
         Integer count = 0;
         parser.require(XmlPullParser.START_TAG, ns, "mr_objects");
@@ -98,7 +100,7 @@ public class XmlOperator {
             String name = parser.getName();
             // Starts by looking for the entry tag
             if (name.equals("object")) {
-                //entries.add(readDetection(parser,count));
+                entries.add(readEntry(parser,count));
                 count++;
             } else {
                 skip(parser);
@@ -108,8 +110,8 @@ public class XmlOperator {
     }
 
     // Parses the contents of an entry. If it encounters a title, summary, or link tag, hands them off
-// to their respective "read" methods for processing. Otherwise, skips the tag.
-    private Classifier.Recognition readEntry(XmlPullParser parser, int id, int height, int width) throws XmlPullParserException, IOException {
+    // to their respective "read" methods for processing. Otherwise, skips the tag.
+    private Classifier.Recognition readDetection(XmlPullParser parser, int id, int height, int width) throws XmlPullParserException, IOException {
 
         parser.require(XmlPullParser.START_TAG, ns, "object");
         String name;
@@ -149,6 +151,30 @@ public class XmlOperator {
         return new Classifier.Recognition(""+id,title,confidence, location);
     }
 
+    //a general parser for non detection results
+    private XmlObject readEntry(XmlPullParser parser, int id) throws XmlPullParserException, IOException {
+
+        parser.require(XmlPullParser.START_TAG, ns, "object");
+        String name = null;
+        String description = null;
+
+        while (parser.next() != XmlPullParser.END_TAG) {
+            if (parser.getEventType() != XmlPullParser.START_TAG) {
+                continue;
+            }
+            String parserName = parser.getName();
+            if (parserName.equals("name")) {
+                name = readName(parser);
+            } else if (parserName.equals("description")) {
+                description = readDescription(parser);
+            } else  {
+                skip(parser);
+            }
+        }
+
+        return new XmlObject(name,description);
+    }
+
     // Processes name tags in the feed.
     private String readName(XmlPullParser parser) throws IOException, XmlPullParserException {
         parser.require(XmlPullParser.START_TAG, ns, "name");
@@ -160,9 +186,9 @@ public class XmlOperator {
     // Processes description tags in the feed.
     private String readDescription(XmlPullParser parser) throws IOException, XmlPullParserException {
         parser.require(XmlPullParser.START_TAG, ns, "description");
-        String summary = readText(parser);
+        String description = readText(parser);
         parser.require(XmlPullParser.END_TAG, ns, "description");
-        return summary;
+        return description;
     }
 
     private float readNumber(XmlPullParser parser, String tag) throws IOException, XmlPullParserException {
