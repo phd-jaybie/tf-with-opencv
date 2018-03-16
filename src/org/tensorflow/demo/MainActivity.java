@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.view.View;
+import android.webkit.URLUtil;
 import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -50,9 +51,12 @@ public class MainActivity extends Activity {
     private SingletonAppList singletonAppList;
     private TextView textView;
     private EditText numberText;
+    private EditText urlString;
     private Switch debugSwitch; // This switch just tells the processing activities if captures are limited or not.
     private Switch networkSwitch; // This switch just tells whether the detection is local or remote.
 
+    private String NetworkMode;
+    private String remoteUrl = null;
 
     public final String firstMessage = "Generate App list first";
 
@@ -103,6 +107,7 @@ public class MainActivity extends Activity {
     private void initialize() {
         textView = (TextView) findViewById(R.id.generate_textView);
         numberText = (EditText) findViewById(R.id.number_of_apps);
+        urlString = (EditText) findViewById(R.id.remote_url);
         debugSwitch = (Switch) findViewById(R.id.debug_toggle);
         networkSwitch = (Switch) findViewById(R.id.network_toggle);
         singletonAppList = SingletonAppList.getInstance();
@@ -152,8 +157,10 @@ public class MainActivity extends Activity {
     private boolean checkList(){
 
         if (singletonAppList.getList().isEmpty()) {
-
             writeToTextView(firstMessage);
+            return false;
+        } else if (networkSwitch.isChecked() && (remoteUrl == null)) {// || !URLUtil.isValidUrl(remoteUrl)) ) {
+            writeToTextView("No or Invalid URL for remote.");
             return false;
         } else {
             writeToTextView(singletonAppList.getListText());
@@ -180,8 +187,19 @@ public class MainActivity extends Activity {
     }
 
     public void onNetworkProcess(View view){
-        if (networkSwitch.isChecked()) networkSwitch.setTextColor(Color.BLACK);
-        else  networkSwitch.setTextColor(Color.LTGRAY);
+
+        remoteUrl = urlString.getText().toString();
+
+        if (networkSwitch.isChecked()) {
+            LOGGER.i("Remote image processing.");
+            networkSwitch.setTextColor(Color.BLACK);
+            NetworkMode = "REMOTE_PROCESS";
+            singletonAppList.setRemoteUrl(remoteUrl);
+        } else {
+            LOGGER.i("Local image processing.");
+            networkSwitch.setTextColor(Color.LTGRAY);
+            NetworkMode = "LOCAL";
+        }
     }
 
     public void mrDetectionIntent(View view){
@@ -207,7 +225,7 @@ public class MainActivity extends Activity {
         if (!checkList()) return;
 
         Intent detectorIntent = new Intent(this, ProtectedMrDetectorActivityWithNetwork.class);
-        if (networkSwitch.isChecked()) detectorIntent.putExtra("NetworkMode","REMOTE_PROCESS");
+        detectorIntent.putExtra("NetworkMode",NetworkMode);
         startActivity(detectorIntent);
 
     }

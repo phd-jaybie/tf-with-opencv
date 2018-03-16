@@ -37,11 +37,16 @@ public class RemoteDetector implements Classifier {
     public static final String TAG = "RemoteDetector";
     private static final Logger LOGGER = new Logger();
 
+    private static String urlString;
+
     // This is the network fragment that handles all network activity/functions.
     private static NetworkFragment mNetworkFragment;
 
-    public static RemoteDetector create() {
+    public static RemoteDetector create(String remoteUrl) {
         final RemoteDetector detector = new RemoteDetector();
+
+        urlString = "http://" + remoteUrl + ":8081";
+
         return detector;
     }
 
@@ -57,7 +62,7 @@ public class RemoteDetector implements Classifier {
         String result = null;
 
         try {
-            URL url = new URL("http://192.168.43.98:8081");
+            URL url = new URL(urlString);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
             long time = System.currentTimeMillis();
@@ -99,8 +104,14 @@ public class RemoteDetector implements Classifier {
 
             try {
                 String responseLength = conn.getHeaderField("Content-length");
+                String responseType = conn.getContentType();
                 inputStream = conn.getInputStream();
-                result = readStream(inputStream, responseLength);
+                if (responseType.equals("text/xml")) {
+                    result = readStream(inputStream, responseLength);
+                } else {
+                    LOGGER.d("Error detection.");
+                    return null;
+                }
                 LOGGER.d("Received from remote: " + result);
             } catch (IOException e) {
                 e.printStackTrace();

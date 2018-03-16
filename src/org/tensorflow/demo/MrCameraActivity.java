@@ -92,6 +92,9 @@ public abstract class MrCameraActivity extends FragmentActivity
   protected NetworkFragment mNetworkFragment;
   protected AssetManager mAssets;
 
+  // This is used by the MrCameraActivity child with networking.
+  protected static String NetworkMode;
+
   // This is the Global object manager for MrObjects.
   protected static MrObjectManager manager;
 
@@ -131,10 +134,10 @@ public abstract class MrCameraActivity extends FragmentActivity
     // creating an instance of the MrObjectManager
     if (manager == null) manager = new MrObjectManager();
 
-    // network activity
-    mNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(),
-            "http://192.168.43.98:8081");
+    final String remoteUrl = "http://"+ singletonAppList.getRemoteUrl() +":8081";
 
+    // network activity
+    mNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), remoteUrl);
     mNetworkFragment.startServer(8081, mAssets);
     mNetworkFragment.setServerListener(this);
 

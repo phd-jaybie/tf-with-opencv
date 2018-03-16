@@ -133,7 +133,6 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
     private Classifier remoteDetector;
     private SiftDetector siftDetector; //for OpenCV detection
     private OrbDetector orbDetector;
-    private static String NetworkMode;
 
     private long lastProcessingTimeMs;
     private Bitmap rgbFrameBitmap = null;
@@ -228,9 +227,10 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
          */
         siftDetector = new SiftDetector();
         orbDetector = new OrbDetector();
-        remoteDetector = RemoteDetector.create();
+        remoteDetector = RemoteDetector.create(singletonAppList.getRemoteUrl());
 
         NetworkMode = getIntent().getStringExtra("NetworkMode");
+        LOGGER.i("NetworkMode: "+ NetworkMode);
 
         previewWidth = size.getWidth();
         previewHeight = size.getHeight();
@@ -374,6 +374,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
 
         if (singletonAppList.isFastDebug()) if (captureCount > CAPTURE_TIMEOUT) return;
 
+
         ++timestamp;
         final long currTimestamp = timestamp;
         byte[] originalLuminance = getLuminance();
@@ -454,11 +455,14 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                         //List<Classifier.Recognition> cResults = new ArrayList<>();
                         CvDetector.QueryImage sResult = new CvDetector.QueryImage();
                         CvDetector.QueryImage oResult = new CvDetector.QueryImage();
-                        if (appListText.contains("MULTIBOX")) {
-                            //if (NetworkMode == "REMOTE_PROCESS")
-                            dResults = remoteDetector.recognizeImage(croppedBitmap);
-                            //else
-                            //    dResults = detector.recognizeImage(croppedBitmap);
+                        if (appListText.contains("OBJECT_API")) {
+                            if (NetworkMode.equals("REMOTE_PROCESS")) {
+                                LOGGER.d("Detection done remotely.");
+                                dResults = remoteDetector.recognizeImage(croppedBitmap);
+                            } else {
+                                LOGGER.d("Detection done locally.");
+                                dResults = detector.recognizeImage(croppedBitmap);
+                            }
                         }
                         if (appListText.contains("SIFT")) sResult = siftDetector.imageDetector(croppedBitmap);
                         if (appListText.contains("ORB")) oResult = orbDetector.imageDetector(croppedBitmap);
@@ -581,7 +585,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                     }
                 });
 
-        sharedAbstraction();
+        //sharedAbstraction();
 
     }
 

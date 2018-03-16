@@ -19,7 +19,7 @@
 
         <EditText
             android:id="@+id/number_of_apps"
-            android:layout_width="90dp"
+            android:layout_width="120dp"
             android:layout_height="match_parent"
             android:layout_marginLeft="@dimen/margin_small"
             android:layout_weight="1"
@@ -28,7 +28,7 @@
             android:inputType="number"
             android:selectAllOnFocus="false"
             android:singleLine="false"
-            android:textSize="12sp" />
+            android:textSize="14sp" />
 
         <Button
             android:id="@+id/generate_app_list"
@@ -37,50 +37,68 @@
             android:layout_weight="2"
             android:onClick="generateAppList"
             android:text="@string/button_generate"
-            android:textSize="12sp" />
+            android:textSize="14sp" />
 
         <Space
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="4" />
 
-        <LinearLayout
+        <Switch
+            android:id="@+id/debug_toggle"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginRight="@dimen/margin_small"
             android:layout_weight="1"
-            android:orientation="vertical">
+            android:checked="false"
+            android:onClick="onFastDebug"
+            android:splitTrack="false"
+            android:text="@string/toggle_fast_debug"
+            android:textColor="@android:color/darker_gray"
+            android:layout_alignParentRight="true"
+            tools:checked="false" />
 
-            <Switch
-                android:id="@+id/debug_toggle"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:layout_marginRight="@dimen/margin_small"
-                android:layout_weight="1"
-                android:checked="false"
-                android:onClick="onFastDebug"
-                android:splitTrack="false"
-                android:text="@string/toggle_fast_debug"
-                android:textColor="@color/darker_gray"
-                android:textSize="12sp"
-                android:layout_alignParentRight="true"
-                tools:checked="false" />
 
-            <Switch
-                android:id="@+id/network_toggle"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:layout_marginRight="@dimen/margin_small"
-                android:layout_weight="1"
-                android:checked="false"
-                android:onClick="onNetworkProcess"
-                android:splitTrack="false"
-                android:text="@string/toggle_network_debug"
-                android:textColor="@color/darker_gray"
-                android:textSize="12sp"
-                android:layout_alignParentRight="true"
-                tools:checked="false" />
+    </LinearLayout>
 
-        </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/margin_small"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/remote_url"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="@dimen/margin_small"
+            android:layout_weight="5"
+            android:ems="10"
+            android:hint="@string/remote_url"
+            android:inputType="textUri"
+            android:selectAllOnFocus="false"
+            android:singleLine="false"
+            android:textSize="14sp" />
+
+        <Space
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+
+        <Switch
+            android:layout_width="wrap_content"
+            android:id="@+id/network_toggle"
+            android:layout_height="match_parent"
+            android:layout_marginRight="@dimen/margin_small"
+            android:layout_weight="3"
+            android:checked="false"
+            android:onClick="onNetworkProcess"
+            android:splitTrack="false"
+            android:text="@string/toggle_network_debug"
+            android:textColor="@android:color/darker_gray"
+            android:layout_alignParentRight="true"
+            tools:checked="false" />
 
     </LinearLayout>
 

@@ -131,6 +131,9 @@ public class NetworkFragment extends Fragment {
 
     /**
      * This one uploads the raw image to a server for processing. And receives the object locations.
+     *
+     * Currently, I am using different class (i.e. RemotedEtector) to do this, thus, this is not
+     * actually used. Will have to reconcile this NetworkFragment library with that one.
      */
     public void remoteImageProcessing(byte[] payload){
         // Convert the list of public objects to an XML. Then send out.

@@ -33,7 +33,7 @@ public class AppRandomizer implements Randomizer {
             {"SIFT","ORB"};
 
     static final String[] tfMethod = new String[]
-            {"MULTIBOX","CLASSIFIER"};
+            {"OBJECT_API","CLASSIFIER"};
 
     static final String[] refnames = new String[]
             {"csiro", "data61", "uhu", "unsw"};
