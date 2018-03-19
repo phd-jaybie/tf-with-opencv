@@ -116,6 +116,7 @@ public class XmlOperator {
         parser.require(XmlPullParser.START_TAG, ns, "object");
         String name;
         String title = null;
+        String type = null; // This is updated for every encountered element in the xml with "type" element.
         float confidence = 0;
         float left = 0;
         float right = 0;
@@ -127,14 +128,21 @@ public class XmlOperator {
                 continue;
             }
             String parserName = parser.getName();
-            if (parserName.equals("name")) {
+
+            if (parserName.equals("type")) {
+                type = readType(parser);
+            } else if (parserName.equals("name")) {
                 name = readName(parser);
-                String[] parts = name.split(":",2);
-                title = parts[0].replace("['","");
-                String conf = parts[1].replace("%']","");
-                confidence = (Float.parseFloat(conf))/100;
+                if (type.equals("tf") || type.equals("TF")) {
+                    String[] parts = name.split(":", 2);
+                    title = parts[0].replace("['", "");
+                    String conf = parts[1].replace("%']", "");
+                    confidence = (Float.parseFloat(conf)) / 100;
+                } else if (type.equals("cv") || type.equals("CV")) {
+                    title = name;
+                }
             } else if (parserName.equals("xmin")) {
-                left = readNumber(parser,"xmin");
+                left = readNumber(parser, "xmin");
             } else if (parserName.equals("ymin")) {
                 top = readNumber(parser, "ymin");
             } else if (parserName.equals("xmax")) {
@@ -151,7 +159,7 @@ public class XmlOperator {
         return new Classifier.Recognition(""+id,title,confidence, location);
     }
 
-    //a general parser for non detection results
+    // a general parser for non detection results
     private XmlObject readEntry(XmlPullParser parser, int id) throws XmlPullParserException, IOException {
 
         parser.require(XmlPullParser.START_TAG, ns, "object");
@@ -173,6 +181,14 @@ public class XmlOperator {
         }
 
         return new XmlObject(name,description);
+    }
+
+    //
+    private String readType(XmlPullParser parser) throws IOException, XmlPullParserException {
+        parser.require(XmlPullParser.START_TAG, ns, "type");
+        String title = readText(parser);
+        parser.require(XmlPullParser.END_TAG, ns, "type");
+        return title;
     }
 
     // Processes name tags in the feed.

@@ -119,6 +119,9 @@ public class MainActivity extends Activity {
     public void generateAppList(View view){
 
         String sNumberOfApps = numberText.getText().toString();
+
+        if (sNumberOfApps.isEmpty()) return;
+
         numberOfApps = Integer.valueOf(sNumberOfApps);
 
         runInBackground(new Runnable() {

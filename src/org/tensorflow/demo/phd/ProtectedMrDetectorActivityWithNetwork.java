@@ -455,17 +455,18 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                         //List<Classifier.Recognition> cResults = new ArrayList<>();
                         CvDetector.QueryImage sResult = new CvDetector.QueryImage();
                         CvDetector.QueryImage oResult = new CvDetector.QueryImage();
-                        if (appListText.contains("OBJECT_API")) {
-                            if (NetworkMode.equals("REMOTE_PROCESS")) {
-                                LOGGER.d("Detection done remotely.");
-                                dResults = remoteDetector.recognizeImage(croppedBitmap);
-                            } else {
-                                LOGGER.d("Detection done locally.");
+                        if (NetworkMode.equals("REMOTE_PROCESS")) {
+                            LOGGER.d("Detection done remotely.");
+                            dResults = remoteDetector.recognizeImage(croppedBitmap);
+                        } else {
+                            LOGGER.d("Detection done locally.");
+                            if (appListText.contains("TF"))
                                 dResults = detector.recognizeImage(croppedBitmap);
-                            }
+                            if (appListText.contains("SIFT"))
+                                sResult = siftDetector.imageDetector(croppedBitmap);
+                            if (appListText.contains("ORB"))
+                                oResult = orbDetector.imageDetector(croppedBitmap);
                         }
-                        if (appListText.contains("SIFT")) sResult = siftDetector.imageDetector(croppedBitmap);
-                        if (appListText.contains("ORB")) oResult = orbDetector.imageDetector(croppedBitmap);
 
                         long detectionTime = SystemClock.uptimeMillis() - startTime;
 
@@ -506,7 +507,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                                             appResults.add(dResult);
 
                                             //object manager
-                                            manager.processObject(app, dResult);
+                                            //manager.processObject(app, dResult);
                                         }
                                     }
 /*
@@ -547,7 +548,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                                     appResults.add(cvDetection);
 
                                     //object manager
-                                    manager.processObject(app, result);
+                                    //manager.processObject(app, result);
                                     break;
 
                             }

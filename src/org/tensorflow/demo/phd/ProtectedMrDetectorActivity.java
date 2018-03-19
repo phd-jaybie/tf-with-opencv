@@ -409,10 +409,11 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
 
                         //detection: TF and CV
                         List<Classifier.Recognition> dResults = new ArrayList<>();
-                        List<Classifier.Recognition> cResults = new ArrayList<>();
+
+                        if (appListText.contains("TF")) dResults = detector.recognizeImage(croppedBitmap);
+
                         CvDetector.QueryImage sResult = new CvDetector.QueryImage();
                         CvDetector.QueryImage oResult = new CvDetector.QueryImage();
-                        if (appListText.contains("OBJECT_API")) dResults = detector.recognizeImage(croppedBitmap);
                         if (appListText.contains("SIFT")) sResult = siftDetector.imageDetector(croppedBitmap);
                         if (appListText.contains("ORB")) oResult = orbDetector.imageDetector(croppedBitmap);
 
