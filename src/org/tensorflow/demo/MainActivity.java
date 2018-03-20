@@ -13,7 +13,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.view.View;
-import android.webkit.URLUtil;
 import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -46,17 +45,19 @@ public class MainActivity extends Activity {
     private int numberOfApps;
     public List<App> appList = new ArrayList<>();
     public String appListText;
-    private boolean hasList = false;
 
     private SingletonAppList singletonAppList;
+
     private TextView textView;
     private EditText numberText;
-    private EditText urlString;
+    private EditText urlStringView;
+    private EditText captureSizeView;
     private Switch debugSwitch; // This switch just tells the processing activities if captures are limited or not.
     private Switch networkSwitch; // This switch just tells whether the detection is local or remote.
 
-    private String NetworkMode;
+    private String NetworkMode = "LOCAL";
     private String remoteUrl = null;
+    private int inputSize = 300;
 
     public final String firstMessage = "Generate App list first";
 
@@ -107,13 +108,11 @@ public class MainActivity extends Activity {
     private void initialize() {
         textView = (TextView) findViewById(R.id.generate_textView);
         numberText = (EditText) findViewById(R.id.number_of_apps);
-        urlString = (EditText) findViewById(R.id.remote_url);
+        captureSizeView = (EditText) findViewById(R.id.capture_size);
+        urlStringView = (EditText) findViewById(R.id.remote_url);
         debugSwitch = (Switch) findViewById(R.id.debug_toggle);
         networkSwitch = (Switch) findViewById(R.id.network_toggle);
         singletonAppList = SingletonAppList.getInstance();
-
-        // Checking for available generated app list.
-        hasList = checkList();
     }
 
     public void generateAppList(View view){
@@ -159,6 +158,11 @@ public class MainActivity extends Activity {
 
     private boolean checkList(){
 
+
+        String captureSizeViewText = captureSizeView.getText().toString();
+        if (captureSizeViewText.isEmpty()) inputSize = 300;
+        else inputSize = Integer.valueOf(captureSizeViewText);
+
         if (singletonAppList.getList().isEmpty()) {
             writeToTextView(firstMessage);
             return false;
@@ -191,7 +195,7 @@ public class MainActivity extends Activity {
 
     public void onNetworkProcess(View view){
 
-        remoteUrl = urlString.getText().toString();
+        remoteUrl = urlStringView.getText().toString();
 
         if (networkSwitch.isChecked()) {
             LOGGER.i("Remote image processing.");
@@ -200,9 +204,10 @@ public class MainActivity extends Activity {
             singletonAppList.setRemoteUrl(remoteUrl);
         } else {
             LOGGER.i("Local image processing.");
-            networkSwitch.setTextColor(Color.LTGRAY);
             NetworkMode = "LOCAL";
+            networkSwitch.setTextColor(Color.LTGRAY);
         }
+
     }
 
     public void mrDetectionIntent(View view){
@@ -210,6 +215,7 @@ public class MainActivity extends Activity {
         if (!checkList()) return;
 
         Intent detectorIntent = new Intent(this, MrDetectorActivity.class);
+        detectorIntent.putExtra("InputSize", inputSize);
         startActivity(detectorIntent);
 
     }
@@ -219,6 +225,7 @@ public class MainActivity extends Activity {
         if (!checkList()) return;
 
         Intent detectorIntent = new Intent(this, ProtectedMrDetectorActivity.class);
+        detectorIntent.putExtra("InputSize", inputSize);
         startActivity(detectorIntent);
 
     }
@@ -229,6 +236,7 @@ public class MainActivity extends Activity {
 
         Intent detectorIntent = new Intent(this, ProtectedMrDetectorActivityWithNetwork.class);
         detectorIntent.putExtra("NetworkMode",NetworkMode);
+        detectorIntent.putExtra("InputSize", inputSize);
         startActivity(detectorIntent);
 
     }

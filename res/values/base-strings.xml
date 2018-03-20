@@ -28,6 +28,7 @@
     <string name="button_generate">Generate</string>
     <string name="number_of_apps">Number of Apps</string>
     <string name="remote_url">Remote URL</string>
+    <string name="input_size">300x300</string>
 
     <string name="activity_name_mr_detection">MR Detection</string>
     <string name="activity_name_mr_detection_with_abstraction">MR Detection w/ Abstraction</string>

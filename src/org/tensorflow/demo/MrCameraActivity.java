@@ -84,6 +84,7 @@ public abstract class MrCameraActivity extends FragmentActivity
 
   protected int previewWidth = 0;
   protected int previewHeight = 0;
+  protected static int inputSize = 300; // default to default crop size
 
   private Runnable postInferenceCallback;
   private Runnable imageConverter;
@@ -130,6 +131,9 @@ public abstract class MrCameraActivity extends FragmentActivity
     }
 
     LOGGER.d(appListText);
+
+    inputSize = getIntent().getIntExtra("InputSize",300);
+    LOGGER.i("Input Size: "+ inputSize);
 
     // creating an instance of the MrObjectManager
     if (manager == null) manager = new MrObjectManager();

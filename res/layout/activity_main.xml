@@ -48,16 +48,14 @@
             android:id="@+id/debug_toggle"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:layout_marginRight="@dimen/margin_small"
+            android:layout_marginEnd="@dimen/margin_small"
             android:layout_weight="1"
             android:checked="false"
             android:onClick="onFastDebug"
             android:splitTrack="false"
             android:text="@string/toggle_fast_debug"
             android:textColor="@android:color/darker_gray"
-            android:layout_alignParentRight="true"
             tools:checked="false" />
-
 
     </LinearLayout>
 
@@ -72,32 +70,39 @@
             android:id="@+id/remote_url"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:layout_marginLeft="@dimen/margin_small"
+            android:layout_marginStart="@dimen/margin_small"
             android:layout_weight="5"
-            android:ems="10"
+            android:ems="8"
             android:hint="@string/remote_url"
             android:inputType="textUri"
             android:selectAllOnFocus="false"
             android:singleLine="false"
             android:textSize="14sp" />
 
-        <Space
+        <EditText
+            android:id="@+id/capture_size"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:layout_weight="1" />
+            android:layout_weight="3"
+            android:ems="4"
+            android:hint="@string/input_size"
+            android:inputType="number"
+            android:selectAllOnFocus="false"
+            android:singleLine="false"
+            android:textSize="14sp" />
 
         <Switch
             android:layout_width="wrap_content"
             android:id="@+id/network_toggle"
             android:layout_height="match_parent"
-            android:layout_marginRight="@dimen/margin_small"
             android:layout_weight="3"
+            android:layout_marginEnd="@dimen/margin_small"
+            android:ems="5"
             android:checked="false"
             android:onClick="onNetworkProcess"
             android:splitTrack="false"
             android:text="@string/toggle_network_debug"
             android:textColor="@android:color/darker_gray"
-            android:layout_alignParentRight="true"
             tools:checked="false" />
 
     </LinearLayout>

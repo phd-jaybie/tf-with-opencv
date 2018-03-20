@@ -13,7 +13,6 @@ package org.tensorflow.demo.phd;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
@@ -21,10 +20,10 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
+import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.net.ConnectivityManager;
-import android.net.Network;
 import android.net.NetworkInfo;
 import android.os.SystemClock;
 import android.util.Size;
@@ -57,6 +56,8 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
+
+import static android.graphics.Bitmap.createBitmap;
 
 /**
  * An activity that follows Tensorflow's demo DetectorActivity class as template and implements
@@ -138,6 +139,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
     private Bitmap rgbFrameBitmap = null;
     private Bitmap croppedBitmap = null;
     private Bitmap cropCopyBitmap = null;
+    private Bitmap inputBitmap = null;
 
     private boolean computingDetection = false;
 
@@ -145,6 +147,9 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
 
     private Matrix frameToCropTransform;
     private Matrix cropToFrameTransform;
+
+    private Matrix inputToCropTransform;
+    private Matrix cropToInputTransform;
 
     private MultiBoxTracker tracker;
 
@@ -179,7 +184,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                             YOLO_INPUT_NAME,
                             YOLO_OUTPUT_NAMES,
                             YOLO_BLOCK_SIZE);
-            cropSize = YOLO_INPUT_SIZE;
+            inputSize = YOLO_INPUT_SIZE;
         } else if (MODE == ProtectedMrDetectorActivityWithNetwork.DetectorMode.MULTIBOX) {
             detector =
                     TensorFlowMultiBoxDetector.create(
@@ -191,7 +196,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                             MB_INPUT_NAME,
                             MB_OUTPUT_LOCATIONS_NAME,
                             MB_OUTPUT_SCORES_NAME);
-            cropSize = MB_INPUT_SIZE;
+            inputSize = MB_INPUT_SIZE;
         } else {
             try {
                 detector = TensorFlowObjectDetectionAPIModel.create(
@@ -199,7 +204,6 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                         TF_OD_API_MODEL_FILE,
                         TF_OD_API_LABELS_FILE,
                         TF_OD_API_INPUT_SIZE);
-                cropSize = TF_OD_API_INPUT_SIZE;
             } catch (final IOException e) {
                 LOGGER.e("Exception initializing classifier!", e);
                 Toast toast =
@@ -250,6 +254,15 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
 
         cropToFrameTransform = new Matrix();
         frameToCropTransform.invert(cropToFrameTransform);
+
+        inputToCropTransform =
+                ImageUtils.getTransformationMatrix(
+                        inputSize, inputSize,
+                        cropSize, cropSize,
+                        sensorOrientation, MAINTAIN_ASPECT);
+
+        cropToInputTransform = new Matrix();
+        inputToCropTransform.invert(cropToInputTransform);
 
         trackingOverlay = (OverlayView) findViewById(R.id.tracking_overlay);
         trackingOverlay.addCallback(
@@ -302,7 +315,8 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                         lines.add("");
 
                         lines.add("Running " + singletonAppList.getList().size() + " apps");
-                        lines.add("Frame: " + previewWidth + "x" + previewHeight);
+                        lines.add("Preview Frame: " + previewWidth + "x" + previewHeight);
+                        //lines.add("Processed Frame: " + inputBitmap.getWidth() + "x" + inputBitmap.getWidth());
                         lines.add("Crop: " + copy.getWidth() + "x" + copy.getHeight());
                         lines.add("View: " + canvas.getWidth() + "x" + canvas.getHeight());
                         //lines.add("Rotation: " + sensorOrientation);
@@ -400,15 +414,18 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
         LOGGER.i("Preparing image " + currTimestamp + " for detection in bg thread.");
 
         rgbFrameBitmap.setPixels(getRgbBytes(), 0, previewWidth, 0, 0, previewWidth, previewHeight);
+        inputBitmap = Bitmap.createScaledBitmap(rgbFrameBitmap,inputSize, inputSize,false);
 
         if (luminanceCopy == null) {
             luminanceCopy = new byte[originalLuminance.length];
         }
+
         System.arraycopy(originalLuminance, 0, luminanceCopy, 0, originalLuminance.length);
         readyForNextImage();
 
         final Canvas canvas = new Canvas(croppedBitmap);
         canvas.drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
+
         // For examining the actual TF input.
         if (SAVE_PREVIEW_BITMAP) {
             ImageUtils.saveBitmap(croppedBitmap);
@@ -452,20 +469,20 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
 
                         // Implementation of Local Abstraction in Detection: TF and CV
                         List<Classifier.Recognition> dResults = new ArrayList<>();
-                        //List<Classifier.Recognition> cResults = new ArrayList<>();
+
                         CvDetector.QueryImage sResult = new CvDetector.QueryImage();
                         CvDetector.QueryImage oResult = new CvDetector.QueryImage();
                         if (NetworkMode.equals("REMOTE_PROCESS")) {
                             LOGGER.d("Detection done remotely.");
-                            dResults = remoteDetector.recognizeImage(croppedBitmap);
+                            dResults = remoteDetector.recognizeImage(inputBitmap);
                         } else {
                             LOGGER.d("Detection done locally.");
                             if (appListText.contains("TF"))
-                                dResults = detector.recognizeImage(croppedBitmap);
+                                dResults = detector.recognizeImage(inputBitmap);
                             if (appListText.contains("SIFT"))
-                                sResult = siftDetector.imageDetector(croppedBitmap);
+                                sResult = siftDetector.imageDetector(inputBitmap);
                             if (appListText.contains("ORB"))
-                                oResult = orbDetector.imageDetector(croppedBitmap);
+                                oResult = orbDetector.imageDetector(inputBitmap);
                         }
 
                         long detectionTime = SystemClock.uptimeMillis() - startTime;
@@ -498,6 +515,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                                     for (final Classifier.Recognition dResult : dResults) {
                                         final RectF location = dResult.getLocation();
                                         if (location != null && dResult.getConfidence() >= minimumConfidence) {
+                                            inputToCropTransform.mapRect(location);
                                             canvas.drawRect(location, paint);
                                             if (!objectsOfInterest.contains(dResult.getTitle())){
                                                 continue; //Don't overlay if not seen.
@@ -539,9 +557,13 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                                     if (result == null) break;
 
                                     result.setTitle(app.getReference().getRefName());
+                                    Path locationPath = result.getLocation().first;
+                                    locationPath.transform(inputToCropTransform);
+                                    canvas.drawPath(locationPath, paint);
 
-                                    canvas.drawPath(result.getLocation().first, paint);
-                                    cropToFrameTransform.mapRect(result.getLocation().second);
+                                    RectF locationRectF = result.getLocation().second;
+                                    inputToCropTransform.mapRect(locationRectF);
+                                    cropToFrameTransform.mapRect(locationRectF);
                                     Classifier.Recognition cvDetection = new Classifier.
                                             Recognition(app.getMethod().second, result.getTitle(),
                                             minimumConfidence, result.getLocation().second);
