@@ -95,6 +95,7 @@ public abstract class MrCameraActivity extends FragmentActivity
 
   // This is used by the MrCameraActivity child with networking.
   protected static String NetworkMode;
+  protected static boolean fastDebug;
 
   // This is the Global object manager for MrObjects.
   protected static MrObjectManager manager;
@@ -134,6 +135,8 @@ public abstract class MrCameraActivity extends FragmentActivity
 
     inputSize = getIntent().getIntExtra("InputSize",300);
     LOGGER.i("Input Size: "+ inputSize);
+
+    fastDebug = getIntent().getBooleanExtra("FastDebug", false);
 
     // creating an instance of the MrObjectManager
     if (manager == null) manager = new MrObjectManager();

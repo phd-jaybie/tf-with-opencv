@@ -11,6 +11,7 @@
     </shared>
   </component>
   <component name="AndroidLogFilters">
+    <option name="TOOL_WINDOW_CUSTOM_FILTER" value="overall" />
     <option name="TOOL_WINDOW_LOG_LEVEL" value="verbose" />
     <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="Show only selected application" />
     <option name="TOOL_WINDOW_REGEXP_FILTER" value="false" />
@@ -18,14 +19,12 @@
   <component name="ChangeListManager">
     <list default="true" id="65cf1c6c-e525-45f8-81b7-dd3e61f629c7" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/res/layout/activity_main.xml" afterPath="$PROJECT_DIR$/res/layout/activity_main.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/res/values/base-strings.xml" afterPath="$PROJECT_DIR$/res/values/base-strings.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/tensorflow/demo/MainActivity.java" afterPath="$PROJECT_DIR$/src/org/tensorflow/demo/MainActivity.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/tensorflow/demo/TensorFlowObjectDetectionAPIModel.java" afterPath="$PROJECT_DIR$/src/org/tensorflow/demo/TensorFlowObjectDetectionAPIModel.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/tensorflow/demo/network/RemoteDetector.java" afterPath="$PROJECT_DIR$/src/org/tensorflow/demo/network/RemoteDetector.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/tensorflow/demo/MrCameraActivity.java" afterPath="$PROJECT_DIR$/src/org/tensorflow/demo/MrCameraActivity.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/tensorflow/demo/phd/MrDetectorActivity.java" afterPath="$PROJECT_DIR$/src/org/tensorflow/demo/phd/MrDetectorActivity.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/tensorflow/demo/phd/ProtectedMrDetectorActivity.java" afterPath="$PROJECT_DIR$/src/org/tensorflow/demo/phd/ProtectedMrDetectorActivity.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/tensorflow/demo/phd/ProtectedMrDetectorActivityWithNetwork.java" afterPath="$PROJECT_DIR$/src/org/tensorflow/demo/phd/ProtectedMrDetectorActivityWithNetwork.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/org/tensorflow/demo/simulator/SingletonAppList.java" afterPath="$PROJECT_DIR$/src/org/tensorflow/demo/simulator/SingletonAppList.java" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -55,11 +54,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="ProtectedMrDetectorActivityWithNetwork.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="ProtectedMrDetectorActivityWithNetwork.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/phd/ProtectedMrDetectorActivityWithNetwork.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="189">
-              <caret line="477" column="68" lean-forward="false" selection-start-line="477" selection-start-column="54" selection-end-line="477" selection-end-column="68" />
+            <state relative-caret-position="250">
+              <caret line="491" column="0" lean-forward="false" selection-start-line="491" selection-start-column="0" selection-end-line="491" selection-end-column="0" />
               <folding>
                 <element signature="imports" expanded="true" />
                 <element signature="e#10881#11207#0" expanded="true" />
@@ -69,8 +68,8 @@
                 <element signature="e#13816#13817#0" expanded="true" />
                 <element signature="e#14327#14546#0" expanded="true" />
                 <element signature="e#14545#14546#0" expanded="true" />
-                <element signature="e#26588#27323#0" expanded="true" />
-                <element signature="e#27322#27323#0" expanded="true" />
+                <element signature="e#26564#27299#0" expanded="true" />
+                <element signature="e#27298#27299#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -103,10 +102,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="RemoteDetector.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="RemoteDetector.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/network/RemoteDetector.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-560">
+            <state relative-caret-position="457">
               <caret line="81" column="0" lean-forward="false" selection-start-line="81" selection-start-column="0" selection-end-line="81" selection-end-column="0" />
               <folding>
                 <element signature="imports" expanded="true" />
@@ -118,8 +117,18 @@
       <file leaf-file-name="MainActivity.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/MainActivity.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="175">
-              <caret line="79" column="2" lean-forward="false" selection-start-line="79" selection-start-column="0" selection-end-line="86" selection-end-column="11" />
+            <state relative-caret-position="238">
+              <caret line="191" column="38" lean-forward="false" selection-start-line="191" selection-start-column="38" selection-end-line="191" selection-end-column="38" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="SingletonAppList.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/simulator/SingletonAppList.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="600">
+              <caret line="55" column="6" lean-forward="false" selection-start-line="55" selection-start-column="6" selection-end-line="55" selection-end-column="6" />
               <folding />
             </state>
           </provider>
@@ -128,8 +137,8 @@
       <file leaf-file-name="MrCameraActivity.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/MrCameraActivity.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1607">
-              <caret line="184" column="21" lean-forward="false" selection-start-line="184" selection-start-column="8" selection-end-line="184" selection-end-column="21" />
+            <state relative-caret-position="-870">
+              <caret line="242" column="19" lean-forward="false" selection-start-line="242" selection-start-column="8" selection-end-line="242" selection-end-column="19" />
               <folding />
             </state>
           </provider>
@@ -138,8 +147,8 @@
       <file leaf-file-name="MrDetectorActivity.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/phd/MrDetectorActivity.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1052">
-              <caret line="390" column="39" lean-forward="false" selection-start-line="390" selection-start-column="0" selection-end-line="391" selection-end-column="0" />
+            <state relative-caret-position="226">
+              <caret line="383" column="27" lean-forward="false" selection-start-line="383" selection-start-column="20" selection-end-line="383" selection-end-column="27" />
               <folding>
                 <element signature="e#12756#12764#0" expanded="true" />
               </folding>
@@ -150,8 +159,8 @@
       <file leaf-file-name="ProtectedMrDetectorActivity.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/phd/ProtectedMrDetectorActivity.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-2568">
-              <caret line="196" column="33" lean-forward="false" selection-start-line="196" selection-start-column="33" selection-end-line="196" selection-end-column="33" />
+            <state relative-caret-position="404">
+              <caret line="348" column="21" lean-forward="false" selection-start-line="348" selection-start-column="21" selection-end-line="348" selection-end-column="21" />
               <folding />
             </state>
           </provider>
@@ -170,14 +179,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>TF_OD_API_INPUT_SIZE</find>
-      <find>Net</find>
-      <find>cropToFrameTransform</find>
-      <find>cropCopyBitmap</find>
-      <find>rgbFrameBitmap</find>
-      <find>getR</find>
-      <find>rgbBytes</find>
-      <find>getRgbBytes</find>
       <find>previewWidth</find>
       <find>croppedBitmap</find>
       <find>NetworkMode</find>
@@ -198,8 +199,16 @@
       <find>SAVE_PREVIEW_BITMAP</find>
       <find>canvas</find>
       <find>INPUT_SIZE</find>
-      <find>previewHeight</find>
       <find>classifier</find>
+      <find>previewHeight</find>
+      <find>intent</find>
+      <find>fast</find>
+      <find>detectionTime</find>
+      <find>OnIma</find>
+      <find>nextIma</find>
+      <find>ImageReader</find>
+      <find>read</find>
+      <find>image.close</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -3902,17 +3911,17 @@
         <option value="$PROJECT_DIR$/src/org/tensorflow/demo/phd/MrObjectManager.java" />
         <option value="$PROJECT_DIR$/src/org/tensorflow/demo/network/NetworkServer.java" />
         <option value="$PROJECT_DIR$/src/org/tensorflow/demo/network/NetworkFragment.java" />
-        <option value="$PROJECT_DIR$/src/org/tensorflow/demo/simulator/SingletonAppList.java" />
         <option value="$PROJECT_DIR$/src/org/tensorflow/demo/simulator/AppRandomizer.java" />
         <option value="$PROJECT_DIR$/src/org/tensorflow/demo/network/XmlOperator.java" />
-        <option value="$PROJECT_DIR$/src/org/tensorflow/demo/MrCameraActivity.java" />
         <option value="$PROJECT_DIR$/src/org/tensorflow/demo/TensorFlowObjectDetectionAPIModel.java" />
-        <option value="$PROJECT_DIR$/src/org/tensorflow/demo/MainActivity.java" />
-        <option value="$PROJECT_DIR$/src/org/tensorflow/demo/phd/ProtectedMrDetectorActivity.java" />
-        <option value="$PROJECT_DIR$/src/org/tensorflow/demo/phd/MrDetectorActivity.java" />
         <option value="$PROJECT_DIR$/res/values/base-strings.xml" />
         <option value="$PROJECT_DIR$/src/org/tensorflow/demo/network/RemoteDetector.java" />
         <option value="$PROJECT_DIR$/res/layout/activity_main.xml" />
+        <option value="$PROJECT_DIR$/src/org/tensorflow/demo/simulator/SingletonAppList.java" />
+        <option value="$PROJECT_DIR$/src/org/tensorflow/demo/MainActivity.java" />
+        <option value="$PROJECT_DIR$/src/org/tensorflow/demo/MrCameraActivity.java" />
+        <option value="$PROJECT_DIR$/src/org/tensorflow/demo/phd/MrDetectorActivity.java" />
+        <option value="$PROJECT_DIR$/src/org/tensorflow/demo/phd/ProtectedMrDetectorActivity.java" />
         <option value="$PROJECT_DIR$/src/org/tensorflow/demo/phd/ProtectedMrDetectorActivityWithNetwork.java" />
       </list>
     </option>
@@ -4023,6 +4032,28 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="demo" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="tf-with-opencv" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="tf-with-opencv" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="demo" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="simulator" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -4271,7 +4302,7 @@
       <option name="ACTIVITY_CLASS" value="" />
       <method>
         <option name="Android.Gradle.BeforeRunTask" enabled="true" />
-        <option name="com.android.instantApps.provision.BeforeRunTask" enabled="true" clearCache="false" clearProvisionedDevices="false" myTimestamp="1521685212712" />
+        <option name="com.android.instantApps.provision.BeforeRunTask" enabled="true" clearCache="false" clearProvisionedDevices="false" myTimestamp="1521693052755" />
       </method>
     </configuration>
     <configuration default="true" type="AndroidTestRunConfigurationType" factoryName="Android Instrumented Tests">
@@ -4319,7 +4350,7 @@
       </Profilers>
       <method>
         <option name="Android.Gradle.BeforeRunTask" enabled="true" />
-        <option name="com.android.instantApps.provision.BeforeRunTask" enabled="true" clearCache="false" clearProvisionedDevices="false" myTimestamp="1521685212713" />
+        <option name="com.android.instantApps.provision.BeforeRunTask" enabled="true" clearCache="false" clearProvisionedDevices="false" myTimestamp="1521693052755" />
       </method>
     </configuration>
     <configuration default="true" type="Application" factoryName="Application">
@@ -4481,7 +4512,7 @@
       <option name="ACTIVITY_CLASS" value="" />
       <method>
         <option name="Android.Gradle.BeforeRunTask" enabled="true" />
-        <option name="com.android.instantApps.provision.BeforeRunTask" enabled="true" clearCache="false" clearProvisionedDevices="false" myTimestamp="1521685212713" />
+        <option name="com.android.instantApps.provision.BeforeRunTask" enabled="true" clearCache="false" clearProvisionedDevices="false" myTimestamp="1521693052756" />
       </method>
     </configuration>
     <configuration default="false" name="tf-with-opencv" type="AndroidRunConfigurationType" factoryName="Android App" activateToolWindowBeforeRun="false">
@@ -4530,7 +4561,7 @@
       <option name="ACTIVITY_CLASS" value="" />
       <method>
         <option name="Android.Gradle.BeforeRunTask" enabled="true" />
-        <option name="com.android.instantApps.provision.BeforeRunTask" enabled="true" clearCache="false" clearProvisionedDevices="false" myTimestamp="1521685212713" />
+        <option name="com.android.instantApps.provision.BeforeRunTask" enabled="true" clearCache="false" clearProvisionedDevices="false" myTimestamp="1521693052756" />
       </method>
     </configuration>
     <list size="2">
@@ -4583,11 +4614,10 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="-1177" width="1920" height="1177" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info id="Android Profiler" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32987747" sideWeight="0.34451544" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32987747" sideWeight="0.49361023" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.35626766" sideWeight="0.26464325" order="13" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.35626766" sideWeight="0.26357827" order="13" side_tool="false" content_ui="tabs" />
       <window_info id="Build Variants" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Palette&#9;" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Image Layers" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -4596,8 +4626,8 @@
       <window_info id="Preview" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32987747" sideWeight="0.49041533" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32893497" sideWeight="0.49361023" order="10" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.28840718" sideWeight="0.3221512" order="11" side_tool="false" content_ui="tabs" />
-      <window_info id="Logcat" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.28840718" sideWeight="0.67784876" order="8" side_tool="true" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.28840718" sideWeight="0.32055378" order="11" side_tool="false" content_ui="tabs" />
+      <window_info id="Logcat" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.28840718" sideWeight="0.6794462" order="8" side_tool="true" content_ui="tabs" />
       <window_info id="Captures" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Capture Tool" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Gradle Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="12" side_tool="true" content_ui="tabs" />
@@ -4837,13 +4867,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/simulator/SingletonAppList.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
-          <caret line="14" column="34" lean-forward="false" selection-start-line="14" selection-start-column="34" selection-end-line="14" selection-end-column="34" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/Classifier.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="594">
@@ -4976,40 +4999,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/phd/ProtectedMrDetectorActivity.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-2568">
-          <caret line="196" column="33" lean-forward="false" selection-start-line="196" selection-start-column="33" selection-end-line="196" selection-end-column="33" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/MainActivity.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="175">
-          <caret line="79" column="2" lean-forward="false" selection-start-line="79" selection-start-column="0" selection-end-line="86" selection-end-column="11" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/MrCameraActivity.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1607">
-          <caret line="184" column="21" lean-forward="false" selection-start-line="184" selection-start-column="8" selection-end-line="184" selection-end-column="21" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/phd/MrDetectorActivity.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1052">
-          <caret line="390" column="39" lean-forward="false" selection-start-line="390" selection-start-column="0" selection-end-line="391" selection-end-column="0" />
-          <folding>
-            <element signature="e#12756#12764#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/res/values/base-strings.xml">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="450">
@@ -5033,10 +5022,62 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/network/RemoteDetector.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="457">
+          <caret line="81" column="0" lean-forward="false" selection-start-line="81" selection-start-column="0" selection-end-line="81" selection-end-column="0" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/simulator/SingletonAppList.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="600">
+          <caret line="55" column="6" lean-forward="false" selection-start-line="55" selection-start-column="6" selection-end-line="55" selection-end-column="6" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/MainActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="238">
+          <caret line="191" column="38" lean-forward="false" selection-start-line="191" selection-start-column="38" selection-end-line="191" selection-end-column="38" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/phd/ProtectedMrDetectorActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="404">
+          <caret line="348" column="21" lean-forward="false" selection-start-line="348" selection-start-column="21" selection-end-line="348" selection-end-column="21" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/phd/MrDetectorActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="226">
+          <caret line="383" column="27" lean-forward="false" selection-start-line="383" selection-start-column="20" selection-end-line="383" selection-end-column="27" />
+          <folding>
+            <element signature="e#12756#12764#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/MrCameraActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-870">
+          <caret line="242" column="19" lean-forward="false" selection-start-line="242" selection-start-column="8" selection-end-line="242" selection-end-column="19" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/phd/ProtectedMrDetectorActivityWithNetwork.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="189">
-          <caret line="477" column="68" lean-forward="false" selection-start-line="477" selection-start-column="54" selection-end-line="477" selection-end-column="68" />
+        <state relative-caret-position="250">
+          <caret line="491" column="0" lean-forward="false" selection-start-line="491" selection-start-column="0" selection-end-line="491" selection-end-column="0" />
           <folding>
             <element signature="imports" expanded="true" />
             <element signature="e#10881#11207#0" expanded="true" />
@@ -5046,18 +5087,8 @@
             <element signature="e#13816#13817#0" expanded="true" />
             <element signature="e#14327#14546#0" expanded="true" />
             <element signature="e#14545#14546#0" expanded="true" />
-            <element signature="e#26588#27323#0" expanded="true" />
-            <element signature="e#27322#27323#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/org/tensorflow/demo/network/RemoteDetector.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-560">
-          <caret line="81" column="0" lean-forward="false" selection-start-line="81" selection-start-column="0" selection-end-line="81" selection-end-column="0" />
-          <folding>
-            <element signature="imports" expanded="true" />
+            <element signature="e#26564#27299#0" expanded="true" />
+            <element signature="e#27298#27299#0" expanded="true" />
           </folding>
         </state>
       </provider>

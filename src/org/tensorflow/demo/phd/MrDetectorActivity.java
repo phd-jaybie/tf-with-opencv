@@ -361,7 +361,7 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
             captureCount = 0;
         }*/
 
-        if (singletonAppList.isFastDebug()) if (captureCount > CAPTURE_TIMEOUT) return;
+        if (fastDebug) if (captureCount > CAPTURE_TIMEOUT) return;
 
         ++timestamp;
         final long currTimestamp = timestamp;

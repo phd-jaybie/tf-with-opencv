@@ -387,7 +387,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
             captureCount = 0;
         }*/
 
-        if (singletonAppList.isFastDebug()) if (captureCount > CAPTURE_TIMEOUT) return;
+        if (fastDebug) if (captureCount > CAPTURE_TIMEOUT) return;
 
 
         ++timestamp;
@@ -476,7 +476,6 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                         if (NetworkMode.equals("REMOTE_PROCESS")) {
                             LOGGER.d("Detection done remotely.");
                             dResults = remoteDetector.recognizeImage(inputBitmap);
-                            if (dResults == null) return; // If there's no response from remote.
                         } else {
                             LOGGER.d("Detection done locally.");
                             if (appListText.contains("TF"))
@@ -488,6 +487,8 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                         }
 
                         long detectionTime = SystemClock.uptimeMillis() - startTime;
+
+                        if (dResults == null) return; // If there's no response from remote.
 
                         for (final App app : appList) {
 

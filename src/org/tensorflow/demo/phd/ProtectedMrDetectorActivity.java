@@ -346,7 +346,7 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
             captureCount = 0;
         }*/
 
-        if (singletonAppList.isFastDebug()) if (captureCount > CAPTURE_TIMEOUT) return;
+        if (fastDebug) if (captureCount > CAPTURE_TIMEOUT) return;
 
         ++timestamp;
         final long currTimestamp = timestamp;
@@ -541,8 +541,6 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                         requestRender();
                         computingDetection = false;
 
-                        LOGGER.i("%d: Overall frame processing %d ms, detection time %d ms",
-                                captureCount, SystemClock.uptimeMillis() - startTime, detectionTime);
                         LOGGER.i(" %d, Number of apps: %d, Frame Size: %d, overall frame processing (ms): %d, detection time (ms): %d",
                                 captureCount, appList.size(),inputSize,SystemClock.uptimeMillis() - startTime, detectionTime);
 

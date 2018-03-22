@@ -56,6 +56,7 @@ public class MainActivity extends Activity {
     private Switch networkSwitch; // This switch just tells whether the detection is local or remote.
 
     private String NetworkMode = "LOCAL";
+    private boolean FastDebug = false;
     private String remoteUrl = null;
     private int inputSize = 300;
 
@@ -150,7 +151,7 @@ public class MainActivity extends Activity {
                 writeToTextView(message + appLogMessage);
                 singletonAppList.setList(appList);
                 singletonAppList.setListText(appListText);
-                singletonAppList.setFastDebug(debugSwitch.isChecked());
+                //singletonAppList.setFastDebug(debugSwitch.isChecked());
             }
         });
 
@@ -188,8 +189,13 @@ public class MainActivity extends Activity {
     }
 
     public void onFastDebug(View view){
-        if (debugSwitch.isChecked()) debugSwitch.setTextColor(Color.BLACK);
-        else  debugSwitch.setTextColor(Color.LTGRAY);
+        if (debugSwitch.isChecked()) {
+            debugSwitch.setTextColor(Color.BLACK);
+            FastDebug = true;
+        } else {
+            debugSwitch.setTextColor(Color.LTGRAY);
+            FastDebug = false;
+        }
 
     }
 
@@ -216,6 +222,7 @@ public class MainActivity extends Activity {
 
         Intent detectorIntent = new Intent(this, MrDetectorActivity.class);
         detectorIntent.putExtra("InputSize", inputSize);
+        detectorIntent.putExtra("FastDebug", FastDebug);
         startActivity(detectorIntent);
 
     }
@@ -226,6 +233,7 @@ public class MainActivity extends Activity {
 
         Intent detectorIntent = new Intent(this, ProtectedMrDetectorActivity.class);
         detectorIntent.putExtra("InputSize", inputSize);
+        detectorIntent.putExtra("FastDebug", FastDebug);
         startActivity(detectorIntent);
 
     }
@@ -237,6 +245,7 @@ public class MainActivity extends Activity {
         Intent detectorIntent = new Intent(this, ProtectedMrDetectorActivityWithNetwork.class);
         detectorIntent.putExtra("NetworkMode",NetworkMode);
         detectorIntent.putExtra("InputSize", inputSize);
+        detectorIntent.putExtra("FastDebug", FastDebug);
         startActivity(detectorIntent);
 
     }

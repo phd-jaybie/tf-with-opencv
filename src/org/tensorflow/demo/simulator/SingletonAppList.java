@@ -9,7 +9,7 @@ import java.util.List;
 
 public class SingletonAppList  {
     private static final SingletonAppList instance = new SingletonAppList();
-    private static boolean fastDebug = true;
+    //private static boolean fastDebug = true;
 
     private List<App> list = new ArrayList<>();
     private String listText = null;
@@ -47,11 +47,11 @@ public class SingletonAppList  {
         return remoteUrl;
     }
 
-    public static boolean isFastDebug() {
-        return fastDebug;
-    }
+    //public static boolean isFastDebug() {
+    //    return fastDebug;
+    //}
 
-    public void setFastDebug(boolean fastDebug) {
-        this.fastDebug = fastDebug;
-    }
+    //public void setFastDebug(boolean fastDebug) {
+    //    this.fastDebug = fastDebug;
+    //}
 }
