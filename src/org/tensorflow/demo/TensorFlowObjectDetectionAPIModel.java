@@ -133,73 +133,81 @@ public class TensorFlowObjectDetectionAPIModel implements Classifier {
 
   @Override
   public List<Recognition> recognizeImage(final Bitmap bitmap) {
-    // Log this method so that it can be analyzed with systrace.
-    Trace.beginSection("recognizeImage");
-
-    Trace.beginSection("preprocessBitmap");
-    // Preprocess the image data from 0-255 int to normalized float based
-    // on the provided parameters.
-    bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
-
-    for (int i = 0; i < intValues.length; ++i) {
-      byteValues[i * 3 + 2] = (byte) (intValues[i] & 0xFF);
-      byteValues[i * 3 + 1] = (byte) ((intValues[i] >> 8) & 0xFF);
-      byteValues[i * 3 + 0] = (byte) ((intValues[i] >> 16) & 0xFF);
-    }
-    Trace.endSection(); // preprocessBitmap
-
-    // Copy the input data into TensorFlow.
-    Trace.beginSection("feed");
-    inferenceInterface.feed(inputName, byteValues, 1, inputSize, inputSize, 3);
-    Trace.endSection();
-
-    // Run the inference call.
-    Trace.beginSection("run");
-    inferenceInterface.run(outputNames, logStats);
-    Trace.endSection();
-
-    // Copy the output Tensor back into the output array.
-    Trace.beginSection("fetch");
-    outputLocations = new float[MAX_RESULTS * 4];
-    outputScores = new float[MAX_RESULTS];
-    outputClasses = new float[MAX_RESULTS];
-    outputNumDetections = new float[1];
-    inferenceInterface.fetch(outputNames[0], outputLocations);
-    inferenceInterface.fetch(outputNames[1], outputScores);
-    inferenceInterface.fetch(outputNames[2], outputClasses);
-    inferenceInterface.fetch(outputNames[3], outputNumDetections);
-    Trace.endSection();
-
-    // Find the best detections.
-    final PriorityQueue<Recognition> pq =
-        new PriorityQueue<Recognition>(
-            1,
-            new Comparator<Recognition>() {
-              @Override
-              public int compare(final Recognition lhs, final Recognition rhs) {
-                // Intentionally reversed to put high confidence at the head of the queue.
-                return Float.compare(rhs.getConfidence(), lhs.getConfidence());
-              }
-            });
-
-    // Scale them back to the input size.
-    for (int i = 0; i < outputScores.length; ++i) {
-      final RectF detection =
-          new RectF(
-              outputLocations[4 * i + 1] * inputSize,
-              outputLocations[4 * i] * inputSize,
-              outputLocations[4 * i + 3] * inputSize,
-              outputLocations[4 * i + 2] * inputSize);
-      pq.add(
-          new Recognition("" + i, labels.get((int) outputClasses[i]), outputScores[i], detection));
-    }
 
     final ArrayList<Recognition> recognitions = new ArrayList<Recognition>();
-    for (int i = 0; i < Math.min(pq.size(), MAX_RESULTS); ++i) {
-      recognitions.add(pq.poll());
+
+    // Log this method so that it can be analyzed with systrace.
+    try {
+      Trace.beginSection("recognizeImage");
+
+      Trace.beginSection("preprocessBitmap");
+      // Preprocess the image data from 0-255 int to normalized float based
+      // on the provided parameters.
+      bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+
+      for (int i = 0; i < intValues.length; ++i) {
+        byteValues[i * 3 + 2] = (byte) (intValues[i] & 0xFF);
+        byteValues[i * 3 + 1] = (byte) ((intValues[i] >> 8) & 0xFF);
+        byteValues[i * 3 + 0] = (byte) ((intValues[i] >> 16) & 0xFF);
+      }
+      Trace.endSection(); // preprocessBitmap
+
+      // Copy the input data into TensorFlow.
+      Trace.beginSection("feed");
+      inferenceInterface.feed(inputName, byteValues, 1, inputSize, inputSize, 3);
+      Trace.endSection();
+
+      // Run the inference call.
+      Trace.beginSection("run");
+      inferenceInterface.run(outputNames, logStats);
+      Trace.endSection();
+
+      // Copy the output Tensor back into the output array.
+      Trace.beginSection("fetch");
+      outputLocations = new float[MAX_RESULTS * 4];
+      outputScores = new float[MAX_RESULTS];
+      outputClasses = new float[MAX_RESULTS];
+      outputNumDetections = new float[1];
+      inferenceInterface.fetch(outputNames[0], outputLocations);
+      inferenceInterface.fetch(outputNames[1], outputScores);
+      inferenceInterface.fetch(outputNames[2], outputClasses);
+      inferenceInterface.fetch(outputNames[3], outputNumDetections);
+      Trace.endSection();
+
+      // Find the best detections.
+      final PriorityQueue<Recognition> pq =
+              new PriorityQueue<Recognition>(
+                      1,
+                      new Comparator<Recognition>() {
+                        @Override
+                        public int compare(final Recognition lhs, final Recognition rhs) {
+                          // Intentionally reversed to put high confidence at the head of the queue.
+                          return Float.compare(rhs.getConfidence(), lhs.getConfidence());
+                        }
+                      });
+
+      // Scale them back to the input size.
+      for (int i = 0; i < outputScores.length; ++i) {
+        final RectF detection =
+                new RectF(
+                        outputLocations[4 * i + 1] * inputSize,
+                        outputLocations[4 * i] * inputSize,
+                        outputLocations[4 * i + 3] * inputSize,
+                        outputLocations[4 * i + 2] * inputSize);
+        pq.add(
+                new Recognition("" + i, labels.get((int) outputClasses[i]), outputScores[i], detection));
+      }
+
+      for (int i = 0; i < Math.min(pq.size(), MAX_RESULTS); ++i) {
+        recognitions.add(pq.poll());
+      }
+      Trace.endSection(); // "recognizeImage"
+      return recognitions;
+
+    } catch (Exception e){
+      e.printStackTrace();
+      return recognitions;
     }
-    Trace.endSection(); // "recognizeImage"
-    return recognitions;
   }
 
   @Override

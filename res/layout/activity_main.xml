@@ -67,26 +67,27 @@
         android:orientation="horizontal">
 
         <EditText
-            android:id="@+id/remote_url"
+            android:id="@+id/capture_size"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
+            android:layout_weight="3"
             android:layout_marginStart="@dimen/margin_small"
-            android:layout_weight="5"
-            android:ems="8"
-            android:hint="@string/remote_url"
-            android:inputType="textUri"
+            android:ems="4"
+            android:hint="@string/input_size"
+            android:inputType="number"
             android:selectAllOnFocus="false"
             android:singleLine="false"
             android:textSize="14sp" />
 
         <EditText
-            android:id="@+id/capture_size"
+            android:id="@+id/remote_url"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:layout_weight="3"
-            android:ems="4"
-            android:hint="@string/input_size"
-            android:inputType="number"
+            android:layout_weight="4"
+            android:layout_marginEnd="@dimen/margin_small"
+            android:ems="8"
+            android:hint="@string/remote_url"
+            android:inputType="textUri"
             android:selectAllOnFocus="false"
             android:singleLine="false"
             android:textSize="14sp" />

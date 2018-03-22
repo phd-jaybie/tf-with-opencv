@@ -180,7 +180,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                     TensorFlowYoloDetector.create(
                             getAssets(),
                             YOLO_MODEL_FILE,
-                            YOLO_INPUT_SIZE,
+                            inputSize,//YOLO_INPUT_SIZE,
                             YOLO_INPUT_NAME,
                             YOLO_OUTPUT_NAMES,
                             YOLO_BLOCK_SIZE);
@@ -203,7 +203,8 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                         getAssets(),
                         TF_OD_API_MODEL_FILE,
                         TF_OD_API_LABELS_FILE,
-                        TF_OD_API_INPUT_SIZE);
+                        inputSize//TF_OD_API_INPUT_SIZE
+                );
             } catch (final IOException e) {
                 LOGGER.e("Exception initializing classifier!", e);
                 Toast toast =
@@ -214,7 +215,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
             }
         }
 
-        // setting up a TF classifier
+        /*// setting up a TF classifier
         classifier =
                 TensorFlowImageClassifier.create(
                         getAssets(),
@@ -224,7 +225,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                         IMAGE_MEAN,
                         IMAGE_STD,
                         INPUT_NAME,
-                        OUTPUT_NAME);
+                        OUTPUT_NAME);*/
 
         /**
          * Inserted the line below for the OpenCV Detector.
@@ -316,7 +317,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
 
                         lines.add("Running " + singletonAppList.getList().size() + " apps");
                         lines.add("Preview Frame: " + previewWidth + "x" + previewHeight);
-                        //lines.add("Processed Frame: " + inputBitmap.getWidth() + "x" + inputBitmap.getWidth());
+                        lines.add("Processed Frame: " + inputBitmap.getWidth() + "x" + inputBitmap.getWidth());
                         lines.add("Crop: " + copy.getWidth() + "x" + copy.getHeight());
                         lines.add("View: " + canvas.getWidth() + "x" + canvas.getHeight());
                         //lines.add("Rotation: " + sensorOrientation);
@@ -414,7 +415,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
         LOGGER.i("Preparing image " + currTimestamp + " for detection in bg thread.");
 
         rgbFrameBitmap.setPixels(getRgbBytes(), 0, previewWidth, 0, 0, previewWidth, previewHeight);
-        inputBitmap = Bitmap.createScaledBitmap(rgbFrameBitmap,inputSize, inputSize,false);
+        inputBitmap = Bitmap.createScaledBitmap(rgbFrameBitmap,inputSize, inputSize,true);
 
         if (luminanceCopy == null) {
             luminanceCopy = new byte[originalLuminance.length];
@@ -475,6 +476,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                         if (NetworkMode.equals("REMOTE_PROCESS")) {
                             LOGGER.d("Detection done remotely.");
                             dResults = remoteDetector.recognizeImage(inputBitmap);
+                            if (dResults == null) return; // If there's no response from remote.
                         } else {
                             LOGGER.d("Detection done locally.");
                             if (appListText.contains("TF"))
@@ -528,21 +530,34 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                                             //manager.processObject(app, dResult);
                                         }
                                     }
-/*
-                                            break;
-                                        case "CLASSIFIER":
-                                            for (final Classifier.Recognition cResult : cResults) {
-                                                if (!objectsOfInterest.contains(cResult.getTitle())){
-                                                    continue; //Don't overlay if not seen.
-                                                }
-                                                appResults.add(cResult);
-                                            }
-
-                                    }
-*/
 
                                     break;
+
                                 case "CV_DETECTOR":
+
+                                    /**
+                                     * The code in the if-condition below is for the remote processed
+                                     * image which returns all detected objects, whether TF or CV processed
+                                     * in the same data structure.
+                                     */
+                                    if (NetworkMode.equals("REMOTE_PROCESS")) {
+                                        for (final Classifier.Recognition dResult : dResults) {
+                                            final RectF location = dResult.getLocation();
+                                            if (dResult.getTitle().equals("cv")) {
+                                                inputToCropTransform.mapRect(location);
+                                                canvas.drawRect(location, paint);
+                                                cropToFrameTransform.mapRect(location);
+                                                dResult.setLocation(location);
+                                                appResults.add(dResult);
+
+                                                //object manager
+                                                //manager.processObject(app, dResult);
+                                            }
+                                        }
+
+                                        break;
+                                    }
+
                                     CvDetector.Recognition result = new CvDetector.Recognition();
 
                                     //transformation

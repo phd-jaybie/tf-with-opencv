@@ -28,6 +28,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -125,14 +126,13 @@ public class RemoteDetector implements Classifier {
     }
 
     private List<Recognition> resultToList(String result, int height, int width){
-        List<Recognition> results;
+        List<Recognition> results = new LinkedList<>();
         XmlOperator xmlParser = new XmlOperator();
-        InputStream in = new ByteArrayInputStream(result.getBytes(StandardCharsets.UTF_8));
         try {
+            InputStream in = new ByteArrayInputStream(result.getBytes(StandardCharsets.UTF_8));
             results = xmlParser.parse(in, height, width);
         } catch (Exception e){
             e.printStackTrace();
-            return null;
         }
         return results;
     }

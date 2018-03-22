@@ -77,14 +77,14 @@ public class MainActivity extends Activity {
 
         initialize(); //Initializes the views
 
-        if (isNetworkConnected()) {
+/*        if (isNetworkConnected()) {
             ProgressDialog mProgressDialog = new ProgressDialog(this);
             mProgressDialog.setMessage("Please wait...");
             mProgressDialog.setCancelable(true);
             mProgressDialog.show();
         } else {
             noConnection();
-        }
+        }*/
     }
 
     private boolean isNetworkConnected() {

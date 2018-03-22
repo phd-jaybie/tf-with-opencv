@@ -15,6 +15,7 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
+import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.media.ImageReader.OnImageAvailableListener;
@@ -128,6 +129,7 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
     private Bitmap rgbFrameBitmap = null;
     private Bitmap croppedBitmap = null;
     private Bitmap cropCopyBitmap = null;
+    private Bitmap inputBitmap = null;
 
     private boolean computingDetection = false;
 
@@ -135,6 +137,12 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
 
     private Matrix frameToCropTransform;
     private Matrix cropToFrameTransform;
+
+    private Matrix frameToInputTransform;
+    private Matrix inputToFrameTransform;
+
+    private Matrix inputToCropTransform;
+    private Matrix cropToInputTransform;
 
     private MultiBoxTracker tracker;
 
@@ -165,7 +173,7 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                     TensorFlowYoloDetector.create(
                             getAssets(),
                             YOLO_MODEL_FILE,
-                            YOLO_INPUT_SIZE,
+                            inputSize, //YOLO_INPUT_SIZE,
                             YOLO_INPUT_NAME,
                             YOLO_OUTPUT_NAMES,
                             YOLO_BLOCK_SIZE);
@@ -186,7 +194,11 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
         } else {
             try {
                 detector = TensorFlowObjectDetectionAPIModel.create(
-                        getAssets(), TF_OD_API_MODEL_FILE, TF_OD_API_LABELS_FILE, TF_OD_API_INPUT_SIZE);
+                        getAssets(),
+                        TF_OD_API_MODEL_FILE,
+                        TF_OD_API_LABELS_FILE,
+                        inputSize//TF_OD_API_INPUT_SIZE
+                        );
                 cropSize = TF_OD_API_INPUT_SIZE;
                 LOGGER.i("Created detector using Object Detector");
             } catch (final IOException e) {
@@ -200,7 +212,7 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
         }
 
         // setting up a TF classifier
-        classifier =
+       /* classifier =
                 TensorFlowImageClassifier.create(
                         getAssets(),
                         MODEL_FILE,
@@ -209,7 +221,7 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                         IMAGE_MEAN,
                         IMAGE_STD,
                         INPUT_NAME,
-                        OUTPUT_NAME);
+                        OUTPUT_NAME);*/
 
         /**
          * Inserted the line below for the OpenCV Detector.
@@ -226,6 +238,7 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
         LOGGER.i("Initializing at size %dx%d", previewWidth, previewHeight);
         rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Config.ARGB_8888);
         croppedBitmap = Bitmap.createBitmap(cropSize, cropSize, Config.ARGB_8888);
+        //inputBitmap = Bitmap.createBitmap(inputSize, inputSize, Config.ARGB_8888);
 
         frameToCropTransform =
                 ImageUtils.getTransformationMatrix(
@@ -235,6 +248,24 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
 
         cropToFrameTransform = new Matrix();
         frameToCropTransform.invert(cropToFrameTransform);
+
+        inputToCropTransform =
+                ImageUtils.getTransformationMatrix(
+                        inputSize, inputSize,
+                        cropSize, cropSize,
+                        sensorOrientation, MAINTAIN_ASPECT);
+
+        cropToInputTransform = new Matrix();
+        inputToCropTransform.invert(cropToInputTransform);
+
+        frameToInputTransform =
+                ImageUtils.getTransformationMatrix(
+                        previewWidth, previewHeight,
+                        inputSize, inputSize,
+                        sensorOrientation, MAINTAIN_ASPECT);
+
+        inputToFrameTransform = new Matrix();
+        frameToInputTransform.invert(inputToFrameTransform);
 
         trackingOverlay = (OverlayView) findViewById(R.id.tracking_overlay);
         trackingOverlay.addCallback(
@@ -288,6 +319,7 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
 
                         lines.add("Running " + singletonAppList.getList().size() + " apps");
                         lines.add("Frame: " + previewWidth + "x" + previewHeight);
+                        lines.add("Processed Frame: " + inputBitmap.getWidth() + "x" + inputBitmap.getWidth());
                         lines.add("Crop: " + copy.getWidth() + "x" + copy.getHeight());
                         lines.add("View: " + canvas.getWidth() + "x" + canvas.getHeight());
                         //lines.add("Rotation: " + sensorOrientation);
@@ -356,6 +388,7 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
         LOGGER.i("Preparing image " + currTimestamp + " for detection in bg thread.");
 
         rgbFrameBitmap.setPixels(getRgbBytes(), 0, previewWidth, 0, 0, previewWidth, previewHeight);
+        inputBitmap = Bitmap.createScaledBitmap(rgbFrameBitmap,inputSize,inputSize,true);
 
         if (luminanceCopy == null) {
             luminanceCopy = new byte[originalLuminance.length];
@@ -365,10 +398,14 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
 
         final Canvas canvas = new Canvas(croppedBitmap);
         canvas.drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
+
         // For examining the actual TF input.
         if (SAVE_PREVIEW_BITMAP) {
             ImageUtils.saveBitmap(croppedBitmap);
         }
+
+        //final Canvas inputCanvas = new Canvas(inputBitmap);
+        //inputCanvas.drawBitmap(rgbFrameBitmap, frameToInputTransform, null);
 
         runInBackground(
                 new Runnable() {
@@ -432,12 +469,13 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                                             break;
                                     }*/
 
-                                    results = detector.recognizeImage(croppedBitmap); // no classifier
+                                    results = detector.recognizeImage(inputBitmap); // no classifier
 
                                     //transformation
                                     for (final Classifier.Recognition dResult : results) {
                                         final RectF location = dResult.getLocation();
                                         if (location != null && dResult.getConfidence() >= minimumConfidence) {
+                                            inputToCropTransform.mapRect(location);
                                             canvas.drawRect(location, paint);
 
                                             cropToFrameTransform.mapRect(location);
@@ -455,11 +493,11 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                                     switch (app.getMethod().second) {
                                         case "SIFT":
                                             //detection
-                                            result = siftDetector.imageDetector(croppedBitmap, app.getReference());
+                                            result = siftDetector.imageDetector(inputBitmap, app.getReference());
                                             break;
                                         case "ORB":
                                             //detection
-                                            result = orbDetector.imageDetector(croppedBitmap, app.getReference());
+                                            result = orbDetector.imageDetector(inputBitmap, app.getReference());
                                             break;
                                     }
 
@@ -467,11 +505,16 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
 
                                     result.setTitle(app.getName());
 
-                                    //transformation
-                                    canvas.drawPath(result.getLocation().first, paint);
-                                    cropToFrameTransform.mapRect(result.getLocation().second);
-                                    Classifier.Recognition cvDetection = new Classifier.Recognition(
-                                            app.getMethod().second, result.getTitle(), minimumConfidence, result.getLocation().second);
+                                    Path locationPath = result.getLocation().first;
+                                    locationPath.transform(inputToCropTransform);
+                                    canvas.drawPath(locationPath, paint);
+
+                                    RectF locationRectF = result.getLocation().second;
+                                    inputToCropTransform.mapRect(locationRectF);
+                                    cropToFrameTransform.mapRect(locationRectF);
+                                    Classifier.Recognition cvDetection = new Classifier.
+                                            Recognition(app.getMethod().second, result.getTitle(),
+                                            minimumConfidence, result.getLocation().second);
                                     appResults.add(cvDetection);
 
                                     break;
