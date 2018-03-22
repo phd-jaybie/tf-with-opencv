@@ -543,6 +543,8 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
 
                         LOGGER.i("%d: Overall frame processing %d ms, detection time %d ms",
                                 captureCount, SystemClock.uptimeMillis() - startTime, detectionTime);
+                        LOGGER.i(" %d, Number of apps: %d, Frame Size: %d, overall frame processing (ms): %d, detection time (ms): %d",
+                                captureCount, appList.size(),inputSize,SystemClock.uptimeMillis() - startTime, detectionTime);
 
                         ++captureCount;
                     }

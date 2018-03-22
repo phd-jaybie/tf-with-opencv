@@ -546,8 +546,8 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                         requestRender();
                         computingDetection = false;
 
-                        LOGGER.i("%d: Overall frame processing %d ms.",
-                                captureCount,SystemClock.uptimeMillis() - startTime);
+                        LOGGER.i(" %d, Number of apps: %d, Frame Size: %d, overall frame processing (ms): %d",
+                                captureCount, appList.size(),inputSize,SystemClock.uptimeMillis() - startTime);
 
                         ++captureCount;
                     }

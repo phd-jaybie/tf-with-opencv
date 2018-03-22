@@ -616,8 +616,8 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                         requestRender();
                         computingDetection = false;
 
-                        LOGGER.i("%d: Overall frame processing %d ms, detection time %d ms",
-                                captureCount, SystemClock.uptimeMillis() - startTime, detectionTime);
+                        LOGGER.i(" %d: %s, Number of apps: %d, Frame Size: %d, overall frame processing (ms): %d, detection time (ms): %d",
+                                 captureCount,NetworkMode, appList.size(),inputSize,SystemClock.uptimeMillis() - startTime, detectionTime);
 
                         ++captureCount;
                     }
