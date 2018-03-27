@@ -136,6 +136,8 @@ public abstract class MrCameraActivity extends FragmentActivity
     inputSize = getIntent().getIntExtra("InputSize",300);
     LOGGER.i("Input Size: "+ inputSize);
 
+    MIN_MATCH_COUNT = 10*Math.round(30*inputSize/4032);
+
     fastDebug = getIntent().getBooleanExtra("FastDebug", false);
 
     // creating an instance of the MrObjectManager
@@ -147,6 +149,8 @@ public abstract class MrCameraActivity extends FragmentActivity
     mNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), remoteUrl);
     mNetworkFragment.startServer(8081, mAssets);
     mNetworkFragment.setServerListener(this);
+
+    LOGGER.i("DataGathering, Image, Number of Apps, Frame Size, Overall Frame Processing (ms), Detection Time (ms)");
 
   }
 

@@ -541,7 +541,7 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                         requestRender();
                         computingDetection = false;
 
-                        LOGGER.i(" %d, Number of apps: %d, Frame Size: %d, overall frame processing (ms): %d, detection time (ms): %d",
+                        LOGGER.i("DataGathering, %d, %d, %d, %d, %d",
                                 captureCount, appList.size(),inputSize,SystemClock.uptimeMillis() - startTime, detectionTime);
 
                         ++captureCount;

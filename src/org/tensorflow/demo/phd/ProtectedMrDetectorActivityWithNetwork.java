@@ -230,6 +230,7 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
         /**
          * Inserted the line below for the OpenCV Detector.
          */
+
         siftDetector = new SiftDetector();
         orbDetector = new OrbDetector();
         remoteDetector = RemoteDetector.create(singletonAppList.getRemoteUrl());
@@ -617,8 +618,8 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                         requestRender();
                         computingDetection = false;
 
-                        LOGGER.i(" %d: %s, Number of apps: %d, Frame Size: %d, overall frame processing (ms): %d, detection time (ms): %d",
-                                 captureCount,NetworkMode, appList.size(),inputSize,SystemClock.uptimeMillis() - startTime, detectionTime);
+                        LOGGER.i("DataGathering, %d, %d, %d, %d, %d",
+                                 captureCount, appList.size(),inputSize,SystemClock.uptimeMillis() - startTime, detectionTime);
 
                         ++captureCount;
                     }

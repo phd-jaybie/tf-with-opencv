@@ -438,7 +438,8 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
 
                         LOGGER.i("Running detection on image " + currTimestamp);
                         final long startTime = SystemClock.uptimeMillis();
-
+                        long detectionTime = 0;
+                        long begin = 0;
 
                         // This for-loop below performs detection and transformation for each
                         // concurrent app that's running. Furthermore, the detection process can be
@@ -447,6 +448,8 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                         for (final App app : appList) {
 
                             LOGGER.i("Doing app: " + app.toString());
+
+                            long detect1 = 0;
 
                             final List<Classifier.Recognition> appResults =
                                     new LinkedList<>(); // collection of results per app
@@ -468,8 +471,9 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
 
                                             break;
                                     }*/
-
+                                    begin = SystemClock.uptimeMillis();
                                     results = detector.recognizeImage(inputBitmap); // no classifier
+                                    detect1 = SystemClock.uptimeMillis()-begin;
 
                                     //transformation
                                     for (final Classifier.Recognition dResult : results) {
@@ -488,7 +492,10 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                                     break;
 
                                 case "CV_DETECTOR":
+
+                                    begin = SystemClock.uptimeMillis();
                                     CvDetector.Recognition result = new CvDetector.Recognition();
+                                    detect1 = SystemClock.uptimeMillis()-begin;
 
                                     switch (app.getMethod().second) {
                                         case "SIFT":
@@ -520,6 +527,8 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                                     break;
 
                             }
+                            long detect2 = detectionTime;
+                            detectionTime = detect2 + detect1;
 
                             app.addCallback(
                                     new App.AppCallback() {
@@ -546,8 +555,8 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                         requestRender();
                         computingDetection = false;
 
-                        LOGGER.i(" %d, Number of apps: %d, Frame Size: %d, overall frame processing (ms): %d",
-                                captureCount, appList.size(),inputSize,SystemClock.uptimeMillis() - startTime);
+                        LOGGER.i("DataGathering, %d, %d, %d, %d, %d",
+                                captureCount, appList.size(),inputSize,SystemClock.uptimeMillis() - startTime, detectionTime);
 
                         ++captureCount;
                     }
