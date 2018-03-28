@@ -75,6 +75,8 @@ public abstract class MrCameraActivity extends FragmentActivity
 
   protected static final int CAPTURE_TIMEOUT = 10;
   protected static final int INSTANCE_TIMEOUT = 10;
+  protected static long[] overallTimes;
+  protected static long[] detectionTimes;
 
   private boolean useCamera2API;
   private boolean isProcessingFrame = false;
@@ -95,6 +97,7 @@ public abstract class MrCameraActivity extends FragmentActivity
 
   // This is used by the MrCameraActivity child with networking.
   protected static String NetworkMode;
+  protected static String remoteUrl;
   protected static boolean fastDebug;
 
   // This is the Global object manager for MrObjects.
@@ -139,16 +142,28 @@ public abstract class MrCameraActivity extends FragmentActivity
     MIN_MATCH_COUNT = 10*Math.round(30*inputSize/4032);
 
     fastDebug = getIntent().getBooleanExtra("FastDebug", false);
+    overallTimes = new long[11];
+    detectionTimes = new long[11];
 
     // creating an instance of the MrObjectManager
     if (manager == null) manager = new MrObjectManager();
 
-    final String remoteUrl = "http://"+ singletonAppList.getRemoteUrl() +":8081";
+    // checking NetworkMode and setting remote URL. This only works for the _withNetwork activity.
+    try {
+      NetworkMode = getIntent().getStringExtra("NetworkMode");
+      if (NetworkMode.equals("REMOTE_PROCESS")) {
+        LOGGER.i("NetworkMode: " + NetworkMode);
+        remoteUrl = getIntent().getStringExtra("RemoteURL");
+      }
 
-    // network activity
-    mNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), remoteUrl);
-    mNetworkFragment.startServer(8081, mAssets);
-    mNetworkFragment.setServerListener(this);
+      // network activity
+      mNetworkFragment = NetworkFragment.getInstance(getSupportFragmentManager(), "http://"+ remoteUrl +":8081");
+      mNetworkFragment.startServer(8081, mAssets);
+      mNetworkFragment.setServerListener(this);
+    } catch(Exception e) {
+      e.printStackTrace();
+    }
+
 
     LOGGER.i("DataGathering, Image, Number of Apps, Frame Size, Overall Frame Processing (ms), Detection Time (ms)");
 

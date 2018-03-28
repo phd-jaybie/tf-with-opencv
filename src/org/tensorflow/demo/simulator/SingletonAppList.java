@@ -13,7 +13,6 @@ public class SingletonAppList  {
 
     private List<App> list = new ArrayList<>();
     private String listText = null;
-    private String remoteUrl = null;
 
     // Private constructor prevents instantiation from other classes
     private SingletonAppList() {
@@ -37,14 +36,6 @@ public class SingletonAppList  {
 
     public String getListText() {
         return listText;
-    }
-
-    public void setRemoteUrl(String remoteUrl) {
-        this.remoteUrl = remoteUrl;
-    }
-
-    public String getRemoteUrl() {
-        return remoteUrl;
     }
 
     //public static boolean isFastDebug() {

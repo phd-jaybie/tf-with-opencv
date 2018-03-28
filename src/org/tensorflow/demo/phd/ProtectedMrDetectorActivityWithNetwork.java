@@ -233,10 +233,8 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
 
         siftDetector = new SiftDetector();
         orbDetector = new OrbDetector();
-        remoteDetector = RemoteDetector.create(singletonAppList.getRemoteUrl());
-
-        NetworkMode = getIntent().getStringExtra("NetworkMode");
-        LOGGER.i("NetworkMode: "+ NetworkMode);
+        if (NetworkMode.equals("REMOTE_PROCESS"))
+            remoteDetector = RemoteDetector.create(remoteUrl);
 
         previewWidth = size.getWidth();
         previewHeight = size.getHeight();
@@ -388,7 +386,19 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
             captureCount = 0;
         }*/
 
-        if (fastDebug) if (captureCount > CAPTURE_TIMEOUT) return;
+        if (fastDebug) if (captureCount > CAPTURE_TIMEOUT) {
+            long sum = 0;
+            for (long d : overallTimes) sum += d;
+            double averageOverall = 1.0d * sum / overallTimes.length;
+
+            sum = 0;
+            for (long d : overallTimes) sum += d;
+            double averageDetection = 1.0d * sum / detectionTimes.length;
+
+            LOGGER.i("DataGatheringAverage, %d, %d, %d, %d, %d",
+                    captureCount, appList.size(),inputSize, averageOverall, averageDetection);
+            return;
+        }
 
 
         ++timestamp;
@@ -618,8 +628,12 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
                         requestRender();
                         computingDetection = false;
 
+                        final long overallTime = SystemClock.uptimeMillis() - startTime;
+
                         LOGGER.i("DataGathering, %d, %d, %d, %d, %d",
-                                 captureCount, appList.size(),inputSize,SystemClock.uptimeMillis() - startTime, detectionTime);
+                                 captureCount, appList.size(),inputSize,overallTime, detectionTime);
+                        overallTimes[captureCount] = overallTime;
+                        detectionTimes[captureCount] = detectionTime;
 
                         ++captureCount;
                     }

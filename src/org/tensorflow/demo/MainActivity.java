@@ -207,7 +207,6 @@ public class MainActivity extends Activity {
             LOGGER.i("Remote image processing.");
             networkSwitch.setTextColor(Color.BLACK);
             NetworkMode = "REMOTE_PROCESS";
-            singletonAppList.setRemoteUrl(remoteUrl);
         } else {
             LOGGER.i("Local image processing.");
             NetworkMode = "LOCAL";
@@ -244,6 +243,7 @@ public class MainActivity extends Activity {
 
         Intent detectorIntent = new Intent(this, ProtectedMrDetectorActivityWithNetwork.class);
         detectorIntent.putExtra("NetworkMode",NetworkMode);
+        detectorIntent.putExtra("RemoteURL",remoteUrl);
         detectorIntent.putExtra("InputSize", inputSize);
         detectorIntent.putExtra("FastDebug", FastDebug);
         startActivity(detectorIntent);
