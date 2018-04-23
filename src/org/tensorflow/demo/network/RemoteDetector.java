@@ -46,7 +46,9 @@ public class RemoteDetector implements Classifier {
     public static RemoteDetector create(String remoteUrl) {
         final RemoteDetector detector = new RemoteDetector();
 
-        urlString = "http://" + remoteUrl + ":8081";
+        //urlString = "http://" + remoteUrl + ":8081"; // for user-input URL
+        //urlString = "http://150.229.118.204:8081"; // co-located edge server
+        urlString = "http://13.211.118.53:8081"; // remote cloud server
 
         return detector;
     }

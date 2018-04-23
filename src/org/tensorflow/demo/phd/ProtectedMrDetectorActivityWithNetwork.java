@@ -392,11 +392,23 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
             double averageOverall = 1.0d * sum / overallTimes.length;
 
             sum = 0;
-            for (long d : overallTimes) sum += d;
+            for (long d : detectionTimes) sum += d;
             double averageDetection = 1.0d * sum / detectionTimes.length;
 
-            LOGGER.i("DataGatheringAverage, %d, %d, %d, %d, %d",
+            LOGGER.i("DataGatheringAverage, %d, %d, %d, %f, %f",
                     captureCount, appList.size(),inputSize, averageOverall, averageDetection);
+
+            if (logWriter!=null) {
+                try {
+                    logWriter.write("DataGathering," + captureCount +","
+                            + appList.size() + "," + inputSize +"," + averageOverall + ","
+                            + averageDetection);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+
             return;
         }
 
@@ -632,8 +644,22 @@ public class ProtectedMrDetectorActivityWithNetwork extends MrCameraActivity {
 
                         LOGGER.i("DataGathering, %d, %d, %d, %d, %d",
                                  captureCount, appList.size(),inputSize,overallTime, detectionTime);
-                        overallTimes[captureCount] = overallTime;
-                        detectionTimes[captureCount] = detectionTime;
+
+                        if (fastDebug) {
+                            overallTimes[captureCount] = overallTime;
+                            detectionTimes[captureCount] = detectionTime;
+                        }
+
+                        if (logWriter!=null) {
+                            try {
+                                logWriter.write("DataGathering," + captureCount +","
+                                        + appList.size() + "," + inputSize +"," + overallTime + ","
+                                        + detectionTime);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+
 
                         ++captureCount;
                     }

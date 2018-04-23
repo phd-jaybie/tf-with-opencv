@@ -42,6 +42,10 @@ import android.view.KeyEvent;
 import android.view.Surface;
 import android.view.WindowManager;
 import android.widget.Toast;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.util.List;
 
@@ -59,7 +63,10 @@ public abstract class MrCameraActivity extends FragmentActivity
 
   //temporarily deactivated spinner
 
+  protected static Integer utilityHit;
+
   private static final Logger LOGGER = new Logger();
+  protected static FileWriter logWriter;
   protected static boolean receiveFlag = false;
 
 
@@ -136,7 +143,7 @@ public abstract class MrCameraActivity extends FragmentActivity
 
     LOGGER.d(appListText);
 
-    inputSize = getIntent().getIntExtra("InputSize",300);
+    inputSize = 500; //getIntent().getIntExtra("InputSize",300);
     LOGGER.i("Input Size: "+ inputSize);
 
     MIN_MATCH_COUNT = 10*Math.round(30*inputSize/4032);
@@ -165,8 +172,10 @@ public abstract class MrCameraActivity extends FragmentActivity
     }
 
 
-    LOGGER.i("DataGathering, Image, Number of Apps, Frame Size, Overall Frame Processing (ms), Detection Time (ms)");
+    //LOGGER.i("DataGathering, Image, Number of Apps, Frame Size, Overall Frame Processing (ms), Detection Time (ms), Number of hits");
+    logWriter = singletonAppList.getWriter();
 
+    utilityHit = 0; // initializing utilityHit
   }
 
   protected void getAppList(){
@@ -329,6 +338,7 @@ public abstract class MrCameraActivity extends FragmentActivity
 
     startBackgroundThread();
     manager.generateList();
+    utilityHit = 0;
   }
 
   @Override

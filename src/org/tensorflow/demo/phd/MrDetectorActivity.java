@@ -361,7 +361,30 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
             captureCount = 0;
         }*/
 
-        if (fastDebug) if (captureCount > CAPTURE_TIMEOUT) return;
+        if (fastDebug) if (captureCount > CAPTURE_TIMEOUT) {
+            long sum = 0;
+            for (long d : overallTimes) sum += d;
+            double averageOverall = 1.0d * sum / overallTimes.length;
+
+            sum = 0;
+            for (long d : detectionTimes) sum += d;
+            double averageDetection = 1.0d * sum / detectionTimes.length;
+
+            LOGGER.i("DataGatheringAverage, %d, %d, %f, %f, %d",
+                    appList.size(),inputSize, averageOverall, averageDetection,
+                    utilityHit);
+            if (logWriter!=null) {
+
+                try{
+                    logWriter.write("DataGathering," + captureCount +","
+                            + appList.size() + "," + inputSize +"," + averageOverall + ","
+                            + averageDetection);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            return;
+        }
 
         ++timestamp;
         final long currTimestamp = timestamp;
@@ -454,6 +477,8 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                             final List<Classifier.Recognition> appResults =
                                     new LinkedList<>(); // collection of results per app
 
+                            Integer localHit = 0;
+
                             switch (app.getMethod().first) {
                                 case "TF_DETECTOR":
                                     List<Classifier.Recognition> results = new ArrayList<>();
@@ -486,6 +511,8 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                                             dResult.setLocation(location);
                                             appResults.add(dResult);
 
+                                            localHit = 1;
+
                                         }
                                     }
 
@@ -495,7 +522,6 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
 
                                     begin = SystemClock.uptimeMillis();
                                     CvDetector.Recognition result = new CvDetector.Recognition();
-                                    detect1 = SystemClock.uptimeMillis()-begin;
 
                                     switch (app.getMethod().second) {
                                         case "SIFT":
@@ -507,8 +533,11 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                                             result = orbDetector.imageDetector(inputBitmap, app.getReference());
                                             break;
                                     }
+                                    detect1 = SystemClock.uptimeMillis()-begin;
 
                                     if (result == null) break;
+
+                                    localHit = 1;
 
                                     result.setTitle(app.getName());
 
@@ -527,8 +556,14 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                                     break;
 
                             }
+
+                            // Measuring local detection time per app
                             long detect2 = detectionTime;
                             detectionTime = detect2 + detect1;
+
+                            // Measuring local hits for utility calculation
+                            final Integer previousHit = utilityHit;
+                            utilityHit = previousHit + localHit;
 
                             app.addCallback(
                                     new App.AppCallback() {
@@ -555,8 +590,25 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                         requestRender();
                         computingDetection = false;
 
+                        final long overallTime = SystemClock.uptimeMillis() - startTime;
+
                         LOGGER.i("DataGathering, %d, %d, %d, %d, %d",
-                                captureCount, appList.size(),inputSize,SystemClock.uptimeMillis() - startTime, detectionTime);
+                                captureCount, appList.size(),inputSize,overallTime, detectionTime);
+                        if (fastDebug) {
+                            overallTimes[captureCount] = overallTime;
+                            detectionTimes[captureCount] = detectionTime;
+                        }
+
+                        if (logWriter!=null) {
+
+                            try {
+                                logWriter.write("DataGathering," + captureCount +","
+                                        + appList.size() + "," + inputSize +"," + overallTime + ","
+                                        + detectionTime);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
 
                         ++captureCount;
                     }

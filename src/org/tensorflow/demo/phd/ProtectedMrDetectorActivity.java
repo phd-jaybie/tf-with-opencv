@@ -60,6 +60,7 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
     private static final Logger LOGGER = new Logger();
 
     private int captureCount = 0;
+    private int secrecyHit = 0;
 
     // Configuration values for the prepackaged multibox model.
     private static final int MB_INPUT_SIZE = 224;
@@ -346,7 +347,31 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
             captureCount = 0;
         }*/
 
-        if (fastDebug) if (captureCount > CAPTURE_TIMEOUT) return;
+        if (fastDebug) if (captureCount > CAPTURE_TIMEOUT) {
+            long sum = 0;
+            for (long d : overallTimes) sum += d;
+            double averageOverall = 1.0d * sum / overallTimes.length;
+
+            sum = 0;
+            for (long d : detectionTimes) sum += d;
+            double averageDetection = 1.0d * sum / detectionTimes.length;
+
+            LOGGER.i("DataGatheringAverage, %d, %d, %f, %f, %d, %d",
+                    appList.size(),inputSize, averageOverall, averageDetection,
+                    utilityHit, secrecyHit);
+            if (logWriter!=null) {
+
+                try {
+                    logWriter.write("DataGathering," + captureCount +","
+                            + appList.size() + "," + inputSize +"," + averageOverall + ","
+                            + averageDetection);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            return;
+        }
 
         ++timestamp;
         final long currTimestamp = timestamp;
@@ -453,6 +478,9 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                             final List<Classifier.Recognition> appResults =
                                     new LinkedList<>(); // collection of results per app
 
+                            Integer localHit = 0;
+                            Integer localSecrecyHit = 0;
+
                             switch (app.getMethod().first) {
                                 case "TF_DETECTOR":
 
@@ -464,9 +492,14 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                                         if (location != null && dResult.getConfidence() >= minimumConfidence) {
                                             inputToCropTransform.mapRect(location);
                                             canvas.drawRect(location, paint);
+
                                             if (!objectsOfInterest.contains(dResult.getTitle())){
+                                                localSecrecyHit = 1;
                                                 continue; //Don't overlay if not seen.
                                             }
+
+                                            localHit = 1;
+
                                             cropToFrameTransform.mapRect(location);
                                             dResult.setLocation(location);
                                             appResults.add(dResult);
@@ -499,6 +532,9 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                                             break;
                                     }
                                     if (result == null) break;
+
+                                    localHit = 1;
+
                                     result.setTitle(app.getName());
 
                                     Path locationPath = result.getLocation().first;
@@ -516,6 +552,13 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                                     break;
 
                             }
+
+                            final Integer previousHit = utilityHit;
+                            utilityHit = previousHit + localHit;
+
+                            final Integer previousSecretHit = secrecyHit;
+                            secrecyHit = previousSecretHit + localSecrecyHit;
+
                             app.addCallback(
                                     new App.AppCallback() {
                                         @Override
@@ -541,8 +584,24 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                         requestRender();
                         computingDetection = false;
 
+                        final long overallTime = SystemClock.uptimeMillis() - startTime;
+
                         LOGGER.i("DataGathering, %d, %d, %d, %d, %d",
-                                captureCount, appList.size(),inputSize,SystemClock.uptimeMillis() - startTime, detectionTime);
+                                captureCount, appList.size(),inputSize,overallTime, detectionTime);
+                        if (fastDebug) {
+                            overallTimes[captureCount] = overallTime;
+                            detectionTimes[captureCount] = detectionTime;
+                        }
+
+                        if (logWriter!=null) {
+                            try {
+                                logWriter.write("DataGathering," + captureCount +","
+                                        + appList.size() + "," + inputSize +"," + overallTime + ","
+                                        + detectionTime);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
 
                         ++captureCount;
                     }

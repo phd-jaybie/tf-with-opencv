@@ -27,6 +27,10 @@ import org.tensorflow.demo.simulator.AppRandomizer;
 import org.tensorflow.demo.simulator.Randomizer;
 import org.tensorflow.demo.simulator.SingletonAppList;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,6 +40,8 @@ import java.util.List;
 
 public class MainActivity extends Activity {
     private static final Logger LOGGER = new Logger();
+    private static String logFile;
+    private static PrintWriter writer;
 
     private Handler handler;
     private HandlerThread handlerThread;
@@ -63,6 +69,10 @@ public class MainActivity extends Activity {
     public final String firstMessage = "Generate App list first";
 
     static {
+        LOGGER.i("DataGatheringAverage, Image, Number of Apps, Frame Size, " +
+                "Overall Frame Processing (ms), Detection Time (ms), " +
+                "Number of hits (, Secret hits)");
+
         if(!OpenCVLoader.initDebug()){
             LOGGER.d("OpenCV not loaded");
         } else {
@@ -86,6 +96,7 @@ public class MainActivity extends Activity {
         } else {
             noConnection();
         }*/
+
     }
 
     private boolean isNetworkConnected() {
@@ -107,6 +118,20 @@ public class MainActivity extends Activity {
     }
 
     private void initialize() {
+        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+        logFile = "log-" + timestamp.toString() + ".txt";
+
+        try {
+            Context context = this.getApplicationContext();
+            File file = new File(context.getFilesDir(), logFile);
+            FileWriter writer = new FileWriter(file);
+            writer.write("DataGathering, Image, Number of Apps, Frame Size," +
+                    "Overall Frame Processing (ms), Detection Time (ms)");
+            singletonAppList.setWriter(writer);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         textView = (TextView) findViewById(R.id.generate_textView);
         numberText = (EditText) findViewById(R.id.number_of_apps);
         captureSizeView = (EditText) findViewById(R.id.capture_size);
@@ -297,6 +322,7 @@ public class MainActivity extends Activity {
         stopBackgroundThread();
 
         super.onPause();
+        if (writer!=null) writer.close();
     }
 
     protected synchronized void runInBackground(final Runnable r) {

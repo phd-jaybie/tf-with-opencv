@@ -1,5 +1,8 @@
 package org.tensorflow.demo.simulator;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,7 +12,7 @@ import java.util.List;
 
 public class SingletonAppList  {
     private static final SingletonAppList instance = new SingletonAppList();
-    //private static boolean fastDebug = true;
+    private FileWriter logWriter;
 
     private List<App> list = new ArrayList<>();
     private String listText = null;
@@ -38,11 +41,11 @@ public class SingletonAppList  {
         return listText;
     }
 
-    //public static boolean isFastDebug() {
-    //    return fastDebug;
-    //}
+    public FileWriter getWriter() {
+        return logWriter;
+    }
 
-    //public void setFastDebug(boolean fastDebug) {
-    //    this.fastDebug = fastDebug;
-    //}
+    public void setWriter(FileWriter writer) {
+        this.logWriter = writer;
+    }
 }

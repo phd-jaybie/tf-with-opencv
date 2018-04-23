@@ -108,16 +108,21 @@ public class AppRandomizer implements Randomizer {
         final List<App> appList = new ArrayList<>(numberOfApps);
 
         for (int i = 0; i < numberOfApps ; i++){
+
+            // default to CV
             Integer first = rnd.nextInt(firstMethod.length);
             String secondMethod;
             ReferenceImage reference = new ReferenceImage();
+
             if (first == 0) {
                 secondMethod = tfMethod[rnd.nextInt(tfMethod.length)];
             } else {
                 secondMethod = cvMethod[rnd.nextInt(cvMethod.length)];
+                //secondMethod = "ORB"; // always uses ORB.
                 //secondMethod = "SIFT"; // always uses SIFT.
                 reference = cvReferenceImage(context, secondMethod);
             }
+
             Pair<String,String> method = new Pair<>(firstMethod[first],secondMethod);
             String[] objectsOfInterest = objects[rnd.nextInt(objects.length)];
             String name = method.first + "_" + method.second + "_" + Integer.toString(i);

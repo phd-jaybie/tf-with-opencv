@@ -32,9 +32,13 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import static org.opencv.core.Core.NORM_HAMMING;
 import static org.tensorflow.demo.MrCameraActivity.MIN_MATCH_COUNT;
 
 public class OrbDetector implements CvDetector{
+
+    int minMatchCount = Math.round(MIN_MATCH_COUNT*10/30);
+
     private static final Logger LOGGER = new Logger();
 
     @Override
@@ -134,8 +138,10 @@ public class OrbDetector implements CvDetector{
         ArrayList<org.opencv.core.Point> points = new ArrayList<>();
         List<MatOfPoint> mScenePoints = new ArrayList<>();
         List<MatOfDMatch> matches = new ArrayList<>();
+        //MatOfDMatch matches = new MatOfDMatch;
 
-        BFMatcher descriptorMatcher = BFMatcher.create(); //NORM_HAMMING,true);
+
+        BFMatcher descriptorMatcher = BFMatcher.create();//NORM_HAMMING,true);
 
         Mat refImage = reference.getRefImageMat();
         Mat qryImage = queryImage.getQryImageMat();
@@ -148,6 +154,7 @@ public class OrbDetector implements CvDetector{
 
         try{
             descriptorMatcher.knnMatch(refDescriptors, qryDescriptors, matches, 2);
+            //match(refDescriptors, qryDescriptors, matches);
 
             long time = System.currentTimeMillis();
 
@@ -162,7 +169,7 @@ public class OrbDetector implements CvDetector{
 
             long time1 = System.currentTimeMillis();
 
-            if (good_matches.size() > MIN_MATCH_COUNT){
+            if (good_matches.size() > minMatchCount){
 
                 /** get keypoint coordinates of good matches to find homography and remove outliers
                  * using ransac */
@@ -203,17 +210,17 @@ public class OrbDetector implements CvDetector{
                 sceneCorners.fromList(points);
                 mScenePoints.add(sceneCorners);
 
-                if (Imgproc.contourArea(mScenePoints.get(0)) > (MIN_MATCH_COUNT*MIN_MATCH_COUNT)) {
+                if (Imgproc.contourArea(mScenePoints.get(0)) > (minMatchCount*minMatchCount)) {
                     LOGGER.i("Time to Match: " + Long.toString((time1 - time))
                             + ", Number of matches: " + good_matches.size()
-                            + " (" + Integer.toString(MIN_MATCH_COUNT) + ")"
+                            + " (" + Integer.toString(minMatchCount) + ")"
                             + ", Time to transform: " + Long.toString((System.currentTimeMillis() - time1)));
                 } else {
                     // Transformation is too small or skewed, object probably not in view, or matching
                     // error.
                     LOGGER.i( "Time to Match: " + Long.toString((time1 - time))
                             + ", Object probably not in view even with " + good_matches.size()
-                            + " (" + Integer.toString(MIN_MATCH_COUNT) + ") matches.");
+                            + " (" + Integer.toString(minMatchCount) + ") matches.");
 
                     return null;
                 }
@@ -221,7 +228,7 @@ public class OrbDetector implements CvDetector{
             } else {
                 LOGGER.i( "Time to Match: " + Long.toString((System.currentTimeMillis() - time))
                         + ", Not Enough Matches (" + good_matches.size()
-                        + "/" + Integer.toString(MIN_MATCH_COUNT) + ")");
+                        + "/" + Integer.toString(minMatchCount) + ")");
                 //result = "Not enough matches.";
                 return null;
             }
