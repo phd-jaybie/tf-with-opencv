@@ -61,6 +61,7 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
 
     private int captureCount = 0;
     private int secrecyHit = 0;
+    private int latentPrivacyHit = 0;
 
     // Configuration values for the prepackaged multibox model.
     private static final int MB_INPUT_SIZE = 224;
@@ -480,6 +481,7 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
 
                             Integer localHit = 0;
                             Integer localSecrecyHit = 0;
+                            Integer localLatentPrivacyHit = 0;
 
                             switch (app.getMethod().first) {
                                 case "TF_DETECTOR":
@@ -493,12 +495,17 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                                             inputToCropTransform.mapRect(location);
                                             canvas.drawRect(location, paint);
 
-                                            if (!objectsOfInterest.contains(dResult.getTitle())){
+                                            if (Arrays.asList(secretObjects).contains(dResult.getTitle())){
                                                 localSecrecyHit = 1;
-                                                continue; //Don't overlay if not seen.
+                                                continue; //Don't overlay if object is secret.
+                                            } else if (objectsOfInterest.contains(dResult.getTitle())){
+                                                localHit = 1;
+                                            } else {
+                                                localLatentPrivacyHit = 1;
+                                                continue; //Don't overlay if object is not required.
                                             }
 
-                                            localHit = 1;
+                                            //localHit = 1;
 
                                             cropToFrameTransform.mapRect(location);
                                             dResult.setLocation(location);
@@ -559,6 +566,9 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
                             final Integer previousSecretHit = secrecyHit;
                             secrecyHit = previousSecretHit + localSecrecyHit;
 
+                            final Integer previousLatentPrivacyHit = latentPrivacyHit;
+                            latentPrivacyHit = previousLatentPrivacyHit + localLatentPrivacyHit;
+
                             app.addCallback(
                                     new App.AppCallback() {
                                         @Override
@@ -586,8 +596,9 @@ public class ProtectedMrDetectorActivity extends MrCameraActivity implements OnI
 
                         final long overallTime = SystemClock.uptimeMillis() - startTime;
 
-                        LOGGER.i("DataGathering, %d, %d, %d, %d, %d",
-                                captureCount, appList.size(),inputSize,overallTime, detectionTime);
+                        LOGGER.i("DataGathering, %d, %d, %d, %d, %d, %d, %d, %d",
+                                captureCount, appList.size(),inputSize,overallTime, detectionTime,
+                                utilityHit, secrecyHit, latentPrivacyHit);
                         if (fastDebug) {
                             overallTimes[captureCount] = overallTime;
                             detectionTimes[captureCount] = detectionTime;

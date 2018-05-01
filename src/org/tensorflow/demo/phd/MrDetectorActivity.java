@@ -26,6 +26,7 @@ import android.widget.Toast;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
@@ -58,6 +59,7 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
     private static final Logger LOGGER = new Logger();
 
     private int captureCount = 0;
+    private int secrecyHit = 0;
 
     // Configuration values for the prepackaged multibox model.
     private static final int MB_INPUT_SIZE = 224;
@@ -476,8 +478,10 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
 
                             final List<Classifier.Recognition> appResults =
                                     new LinkedList<>(); // collection of results per app
+                            List<String> objectsOfInterest = Arrays.asList(app.getObjectsOfInterest());
 
                             Integer localHit = 0;
+                            Integer localSecrecyHit = 0;
 
                             switch (app.getMethod().first) {
                                 case "TF_DETECTOR":
@@ -507,11 +511,18 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                                             inputToCropTransform.mapRect(location);
                                             canvas.drawRect(location, paint);
 
+                                            if (Arrays.asList(secretObjects).contains(dResult.getTitle())){
+                                                localSecrecyHit = 1;
+                                                //continue; //Don't overlay if object is secret.
+                                            } else if (objectsOfInterest.contains(dResult.getTitle())){ // case 3
+                                                localHit = 1;
+                                            }
+
                                             cropToFrameTransform.mapRect(location);
                                             dResult.setLocation(location);
                                             appResults.add(dResult);
 
-                                            localHit = 1;
+                                            //localHit = 1;
 
                                         }
                                     }
@@ -565,6 +576,9 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                             final Integer previousHit = utilityHit;
                             utilityHit = previousHit + localHit;
 
+                            final Integer previousSecretHit = secrecyHit;
+                            secrecyHit = previousSecretHit + localSecrecyHit;
+
                             app.addCallback(
                                     new App.AppCallback() {
                                         @Override
@@ -592,8 +606,9 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
 
                         final long overallTime = SystemClock.uptimeMillis() - startTime;
 
-                        LOGGER.i("DataGathering, %d, %d, %d, %d, %d",
-                                captureCount, appList.size(),inputSize,overallTime, detectionTime);
+                        LOGGER.i("DataGathering, %d, %d, %d, %d, %d, %d, %d",
+                                captureCount, appList.size(),inputSize,overallTime, detectionTime,
+                                utilityHit, secrecyHit);
                         if (fastDebug) {
                             overallTimes[captureCount] = overallTime;
                             detectionTimes[captureCount] = detectionTime;

@@ -64,6 +64,8 @@ public abstract class MrCameraActivity extends FragmentActivity
   //temporarily deactivated spinner
 
   protected static Integer utilityHit;
+  protected static final String[] secretObjects = new String[]
+          {"person", "bed", "toilet", "laptop", "cell phone"}; //high sensitivity objects
 
   private static final Logger LOGGER = new Logger();
   protected static FileWriter logWriter;
@@ -80,7 +82,7 @@ public abstract class MrCameraActivity extends FragmentActivity
   private Handler handler;
   private HandlerThread handlerThread;
 
-  protected static final int CAPTURE_TIMEOUT = 10;
+  protected static final int CAPTURE_TIMEOUT = 19;
   protected static final int INSTANCE_TIMEOUT = 10;
   protected static long[] overallTimes;
   protected static long[] detectionTimes;
@@ -149,8 +151,8 @@ public abstract class MrCameraActivity extends FragmentActivity
     MIN_MATCH_COUNT = 10*Math.round(30*inputSize/4032);
 
     fastDebug = getIntent().getBooleanExtra("FastDebug", false);
-    overallTimes = new long[11];
-    detectionTimes = new long[11];
+    overallTimes = new long[CAPTURE_TIMEOUT+1];
+    detectionTimes = new long[CAPTURE_TIMEOUT+1];
 
     // creating an instance of the MrObjectManager
     if (manager == null) manager = new MrObjectManager();

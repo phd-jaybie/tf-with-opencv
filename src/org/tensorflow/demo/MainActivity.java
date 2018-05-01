@@ -71,7 +71,7 @@ public class MainActivity extends Activity {
     static {
         LOGGER.i("DataGatheringAverage, Image, Number of Apps, Frame Size, " +
                 "Overall Frame Processing (ms), Detection Time (ms), " +
-                "Number of hits (, Secret hits)");
+                "Number of hits, Secret hits (, Latent Privacy Hit) ");
 
         if(!OpenCVLoader.initDebug()){
             LOGGER.d("OpenCV not loaded");

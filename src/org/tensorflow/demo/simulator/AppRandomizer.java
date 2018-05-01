@@ -41,12 +41,29 @@ public class AppRandomizer implements Randomizer {
     static final Integer[] drawables = new Integer[]
             {R.drawable.csiro, R.drawable.data61, R.drawable.uhu, R.drawable.unsw};
 
+/*    static final String[] objects = new String[]
+            {
+                    "laptop", "remote","keyboard", "scissors","cell phone", //office objects
+                    "bus", "uhu", "truck", "boat", "traffic light", "fire hydrant", "stop sign",
+                            "parking meter","bench",//outside objects
+                    "bird", "cat", "dog", "horse", "sheep","cow","elephant","bear","zebra",
+                            "giraffe", //animal objects
+                    "frisbee","skis", "snowboard","sports ball","kite","baseball bat",
+                            "baseball glove","skateboard","surfboard",
+                            "tennis racket", //sporty objects
+                    //"potted plant", "microwave", "oven","toaster","sink","refrigerator","vase",
+                    //        "hair drier", "remote", //house objects
+                    "bottle","wine glass","cup","fork","knife","spoon","bowl","banana","apple",
+                            "sandwich","orange","broccoli","carrot","hot dog","pizza","donut",
+                            "cake", "chair","couch", "dining table" //kitchen or food objects
+                    //{"person", "bed", "toilet", "laptop", "mouse","keyboard",
+                    //        "cell phone"}, //high sensitivity objects
+            };*/
+
     static final String[][] objects = new String[][]
             {
                     {"tv", "laptop", "mouse", "remote","keyboard", "scissors","cell phone",
                             "book"}, //office objects
-                    {"person", "bed", "toilet", "laptop", "mouse","keyboard",
-                            "cell phone"}, //high sensitivity objects
                     {"bus", "uhu", "truck", "boat", "traffic light", "fire hydrant", "stop sign",
                             "parking meter","bench"}, //outside objects
                     {"bird", "cat", "dog", "horse", "sheep","cow","elephant","bear","zebra",
@@ -55,10 +72,12 @@ public class AppRandomizer implements Randomizer {
                             "baseball glove","skateboard","surfboard",
                             "tennis racket"}, //sporty objects
                     {"potted plant", "microwave", "oven","toaster","sink","refrigerator","vase",
-                            "hair drier", "tv", "remote"}, //house objects
+                            "hair drier", "tv", "remote", "toilet", "bed"}, //house objects
                     {"bottle","wine glass","cup","fork","knife","spoon","bowl","banana","apple",
                             "sandwich","orange","broccoli","carrot","hot dog","pizza","donut",
                             "cake", "chair","couch", "dining table"}, //kitchen or food objects
+                    {"person", "bed", "toilet", "laptop", "mouse","keyboard",
+                            "cell phone"} //high sensitivity objects
             };
 
     public class ReferenceImage {
@@ -109,7 +128,7 @@ public class AppRandomizer implements Randomizer {
 
         for (int i = 0; i < numberOfApps ; i++){
 
-            // default to CV
+            // default to TF
             Integer first = rnd.nextInt(firstMethod.length);
             String secondMethod;
             ReferenceImage reference = new ReferenceImage();
