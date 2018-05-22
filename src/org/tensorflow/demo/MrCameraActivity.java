@@ -145,7 +145,7 @@ public abstract class MrCameraActivity extends FragmentActivity
 
     LOGGER.d(appListText);
 
-    inputSize = 500; //getIntent().getIntExtra("InputSize",300);
+    inputSize = getIntent().getIntExtra("InputSize",300);
     LOGGER.i("Input Size: "+ inputSize);
 
     MIN_MATCH_COUNT = 10*Math.round(30*inputSize/4032);

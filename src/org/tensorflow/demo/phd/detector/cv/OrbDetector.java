@@ -21,6 +21,7 @@ import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.features2d.BFMatcher;
+import org.opencv.features2d.DescriptorMatcher;
 import org.opencv.features2d.ORB;
 import org.opencv.imgproc.Imgproc;
 import org.tensorflow.demo.env.Logger;
@@ -137,11 +138,12 @@ public class OrbDetector implements CvDetector{
 
         ArrayList<org.opencv.core.Point> points = new ArrayList<>();
         List<MatOfPoint> mScenePoints = new ArrayList<>();
-        List<MatOfDMatch> matches = new ArrayList<>();
-        //MatOfDMatch matches = new MatOfDMatch;
+        //List<MatOfDMatch> matches = new ArrayList<>();
+        MatOfDMatch matches = new MatOfDMatch();
 
 
-        BFMatcher descriptorMatcher = BFMatcher.create();//NORM_HAMMING,true);
+        //BFMatcher descriptorMatcher = BFMatcher.create();//NORM_HAMMING,true);
+        DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
 
         Mat refImage = reference.getRefImageMat();
         Mat qryImage = queryImage.getQryImageMat();
@@ -153,19 +155,37 @@ public class OrbDetector implements CvDetector{
         MatOfKeyPoint qryKeypoints = queryImage.getQryKeyPoints();
 
         try{
-            descriptorMatcher.knnMatch(refDescriptors, qryDescriptors, matches, 2);
+            matcher.match(refDescriptors, qryDescriptors, matches);
             //match(refDescriptors, qryDescriptors, matches);
 
             long time = System.currentTimeMillis();
 
+            //Using regular matching
+            List<DMatch> matchesList = matches.toList();
+
+            Double max_dist = 0.0;
+            Double min_dist = 100.0;
+
+            for (int i = 0; i < matchesList.size(); i++) {
+                Double dist = (double) matchesList.get(i).distance;
+                if (dist < min_dist)
+                    min_dist = dist;
+                if (dist > max_dist)
+                    max_dist = dist;
+            }
+
             // ratio test
             LinkedList<DMatch> good_matches = new LinkedList<>();
-            for (Iterator<MatOfDMatch> iterator = matches.iterator(); iterator.hasNext();) {
+            for (int i = 0; i < matchesList.size(); i++) {
+                if (matchesList.get(i).distance <= (1.5 * min_dist))
+                    good_matches.addLast(matchesList.get(i));
+            }
+/*            for (Iterator<MatOfDMatch> iterator = matches.iterator(); iterator.hasNext();) {
                 MatOfDMatch matOfDMatch = iterator.next();
                 if (matOfDMatch.toArray()[0].distance / matOfDMatch.toArray()[1].distance < 0.75) {
                     good_matches.add(matOfDMatch.toArray()[0]);
                 }
-            }
+            }*/
 
             long time1 = System.currentTimeMillis();
 

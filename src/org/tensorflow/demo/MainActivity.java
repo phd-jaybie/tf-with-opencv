@@ -20,6 +20,7 @@ import android.widget.TextView;
 import org.opencv.android.OpenCVLoader;
 import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.phd.MrDetectorActivity;
+import org.tensorflow.demo.phd.MrNullActivity;
 import org.tensorflow.demo.phd.ProtectedMrDetectorActivity;
 import org.tensorflow.demo.phd.ProtectedMrDetectorActivityWithNetwork;
 import org.tensorflow.demo.simulator.App;
@@ -59,10 +60,12 @@ public class MainActivity extends Activity {
     private EditText urlStringView;
     private EditText captureSizeView;
     private Switch debugSwitch; // This switch just tells the processing activities if captures are limited or not.
+    private Switch fixedAppsSwitch; // This switch just tells the app randomizer to create a fixed set of apps.
     private Switch networkSwitch; // This switch just tells whether the detection is local or remote.
 
     private String NetworkMode = "LOCAL";
     private boolean FastDebug = false;
+    private boolean FixedApps = false;
     private String remoteUrl = null;
     private int inputSize = 300;
 
@@ -137,6 +140,7 @@ public class MainActivity extends Activity {
         captureSizeView = (EditText) findViewById(R.id.capture_size);
         urlStringView = (EditText) findViewById(R.id.remote_url);
         debugSwitch = (Switch) findViewById(R.id.debug_toggle);
+        fixedAppsSwitch = (Switch) findViewById(R.id.fixed_apps_toggle);
         networkSwitch = (Switch) findViewById(R.id.network_toggle);
         singletonAppList = SingletonAppList.getInstance();
     }
@@ -149,41 +153,61 @@ public class MainActivity extends Activity {
 
         numberOfApps = Integer.valueOf(sNumberOfApps);
 
-        runInBackground(new Runnable() {
-            @Override
-            public void run() {
+        String message;
 
-                String message;
+        if (debugSwitch.isChecked()) message = "Will only take a limited number captures.\n";
+        else message = "Will capture continuously.\n";
 
-                if (debugSwitch.isChecked()) message = "Will only take 10 captures.\n";
-                else message = "Will capture continuously.\n";
+        message = message + "Creating a " + numberOfApps + "-app list.\n";
+        LOGGER.i(message);
 
-                message = message + "Creating a new " + numberOfApps + "-app list.\n";
-                LOGGER.i(message);
+        writeToTextView(message);
 
-                writeToTextView(message);
+        randomizer = AppRandomizer.create();
 
-                randomizer = AppRandomizer.create();
-                appList = randomizer.appGenerator(getApplicationContext(), numberOfApps);
+        if (FixedApps) {
 
-                String appLogMessage = "App list:\n";
-                for (App app: appList) {
-                    appLogMessage = appLogMessage + app.getName() + "\n";
+            runInBackground(new Runnable() {
+                @Override
+                public void run() {
+                    appList = randomizer.fixedAppGenerator(getApplicationContext(), numberOfApps);
+
+                    String appLogMessage = "App list:\n";
+                    for (App app : appList) {
+                        appLogMessage = appLogMessage + app.getName() + "\n";
+                    }
+                    LOGGER.i(appLogMessage);
+                    appListText = appLogMessage;
+
+                    writeToTextView(appLogMessage);
+                    singletonAppList.setList(appList);
+                    singletonAppList.setListText(appListText);
                 }
-                LOGGER.i(appLogMessage);
-                appListText = appLogMessage;
+            });
 
-                writeToTextView(message + appLogMessage);
-                singletonAppList.setList(appList);
-                singletonAppList.setListText(appListText);
-                //singletonAppList.setFastDebug(debugSwitch.isChecked());
-            }
-        });
+        } else {
+            runInBackground(new Runnable() {
+                @Override
+                public void run() {
+                    appList = randomizer.appGenerator(getApplicationContext(), numberOfApps);
+
+                    String appLogMessage = "App list:\n";
+                    for (App app : appList) {
+                        appLogMessage = appLogMessage + app.getName() + "\n";
+                    }
+                    LOGGER.i(appLogMessage);
+                    appListText = appLogMessage;
+
+                    writeToTextView(appLogMessage);
+                    singletonAppList.setList(appList);
+                    singletonAppList.setListText(appListText);
+                }
+            });
+        }
 
     }
 
     private boolean checkList(){
-
 
         String captureSizeViewText = captureSizeView.getText().toString();
         if (captureSizeViewText.isEmpty()) inputSize = 300;
@@ -224,6 +248,17 @@ public class MainActivity extends Activity {
 
     }
 
+    public void onFixedApps(View view){
+        if (fixedAppsSwitch.isChecked()) {
+            fixedAppsSwitch.setTextColor(Color.BLACK);
+            FixedApps = true;
+        } else {
+            fixedAppsSwitch.setTextColor(Color.LTGRAY);
+            FixedApps = false;
+        }
+
+    }
+
     public void onNetworkProcess(View view){
 
         remoteUrl = urlStringView.getText().toString();
@@ -237,6 +272,18 @@ public class MainActivity extends Activity {
             NetworkMode = "LOCAL";
             networkSwitch.setTextColor(Color.LTGRAY);
         }
+
+    }
+
+
+    public void mrNullIntent(View view){
+
+        //if (!checkList()) return;
+
+        Intent detectorIntent = new Intent(this, MrNullActivity.class);
+        detectorIntent.putExtra("InputSize", inputSize);
+        detectorIntent.putExtra("FastDebug", FastDebug);
+        startActivity(detectorIntent);
 
     }
 

@@ -15,6 +15,7 @@ import org.tensorflow.demo.env.Logger;
 import java.io.Serializable;
 import java.sql.Ref;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -152,6 +153,46 @@ public class AppRandomizer implements Randomizer {
         return appList;
     }
 
+    public List<App> fixedAppGenerator(Context context, int numberOfApps){
+        Random rnd = new Random();
+        final List<App> appList = new ArrayList<>(numberOfApps);
+
+        Integer[][] fixedMethods = new Integer[][]
+                {
+                        {0,0}, //tf, od
+                        {1,0}, //cv, sift
+                        {1,1}, //cv, orb
+                        {0,1}, //tf, cl
+                        {1,0}, //cv, sift
+                        {1,1} //cv, orb
+                };
+
+        for (int i = 0; i < numberOfApps ; i++){
+
+            Integer first = fixedMethods[i%(fixedMethods.length)][0];
+            Integer second = fixedMethods[i%(fixedMethods.length)][1];
+            String secondMethod;
+            ReferenceImage reference = new ReferenceImage();
+
+            if (first == 0) {
+                secondMethod = tfMethod[second];
+            } else {
+                secondMethod = cvMethod[second];
+                //secondMethod = "ORB"; // always uses ORB.
+                //secondMethod = "SIFT"; // always uses SIFT.
+                reference = cvReferenceImage(context, secondMethod);
+            }
+
+            Pair<String,String> method = new Pair<>(firstMethod[first],secondMethod);
+            String[] objectsOfInterest = objects[rnd.nextInt(objects.length)];
+            String name = method.first + "_" + method.second + "_" + Integer.toString(i);
+            App app = new App(i,name,method,objectsOfInterest,reference);
+            appList.add(app);
+        }
+
+        return appList;
+    }
+
     private ReferenceImage cvReferenceImage(Context context, String method) {
         /** Extract the reference SIFT features */
         final ReferenceImage reference = new ReferenceImage();
@@ -160,7 +201,7 @@ public class AppRandomizer implements Randomizer {
         Mat refDescriptors = new Mat();
         Mat refImageMat = new Mat();
 
-        Integer drawable = new Random().nextInt(drawables.length);
+        Integer drawable = 2; //default to UHU ref, new Random().nextInt(drawables.length);
 
         long time = System.currentTimeMillis();
 

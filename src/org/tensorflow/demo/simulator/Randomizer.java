@@ -12,6 +12,8 @@ public interface Randomizer {
 
     List<App> appGenerator(Context context, int numberOfApps);
 
+    List<App> fixedAppGenerator(Context context, int numberOfApps);
+
     //List<User> userGenerator(int numberOfUsers);
 
 }
