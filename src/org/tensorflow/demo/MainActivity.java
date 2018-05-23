@@ -21,6 +21,7 @@ import org.opencv.android.OpenCVLoader;
 import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.phd.MrDetectorActivity;
 import org.tensorflow.demo.phd.MrNullActivity;
+import org.tensorflow.demo.phd.MrThreadedDetectorActivity;
 import org.tensorflow.demo.phd.ProtectedMrDetectorActivity;
 import org.tensorflow.demo.phd.ProtectedMrDetectorActivityWithNetwork;
 import org.tensorflow.demo.simulator.App;
@@ -60,11 +61,13 @@ public class MainActivity extends Activity {
     private EditText urlStringView;
     private EditText captureSizeView;
     private Switch debugSwitch; // This switch just tells the processing activities if captures are limited or not.
+    private Switch threadSwitch; // This switch just tells the processing activities if threaded or not.
     private Switch fixedAppsSwitch; // This switch just tells the app randomizer to create a fixed set of apps.
     private Switch networkSwitch; // This switch just tells whether the detection is local or remote.
 
     private String NetworkMode = "LOCAL";
     private boolean FastDebug = false;
+    private boolean Threading = false;
     private boolean FixedApps = false;
     private String remoteUrl = null;
     private int inputSize = 300;
@@ -140,6 +143,7 @@ public class MainActivity extends Activity {
         captureSizeView = (EditText) findViewById(R.id.capture_size);
         urlStringView = (EditText) findViewById(R.id.remote_url);
         debugSwitch = (Switch) findViewById(R.id.debug_toggle);
+        threadSwitch = (Switch) findViewById(R.id.thread_toggle);
         fixedAppsSwitch = (Switch) findViewById(R.id.fixed_apps_toggle);
         networkSwitch = (Switch) findViewById(R.id.network_toggle);
         singletonAppList = SingletonAppList.getInstance();
@@ -248,6 +252,17 @@ public class MainActivity extends Activity {
 
     }
 
+    public void onThread(View view){
+        if (threadSwitch.isChecked()) {
+            threadSwitch.setTextColor(Color.BLACK);
+            Threading = true;
+        } else {
+            threadSwitch.setTextColor(Color.LTGRAY);
+            Threading = false;
+        }
+
+    }
+
     public void onFixedApps(View view){
         if (fixedAppsSwitch.isChecked()) {
             fixedAppsSwitch.setTextColor(Color.BLACK);
@@ -291,10 +306,17 @@ public class MainActivity extends Activity {
 
         if (!checkList()) return;
 
-        Intent detectorIntent = new Intent(this, MrDetectorActivity.class);
-        detectorIntent.putExtra("InputSize", inputSize);
-        detectorIntent.putExtra("FastDebug", FastDebug);
-        startActivity(detectorIntent);
+        if (Threading) {
+            Intent detectorIntent = new Intent(this, MrThreadedDetectorActivity.class);
+            detectorIntent.putExtra("InputSize", inputSize);
+            detectorIntent.putExtra("FastDebug", FastDebug);
+            startActivity(detectorIntent);
+        } else {
+            Intent detectorIntent = new Intent(this, MrDetectorActivity.class);
+            detectorIntent.putExtra("InputSize", inputSize);
+            detectorIntent.putExtra("FastDebug", FastDebug);
+            startActivity(detectorIntent);
+        }
 
     }
 

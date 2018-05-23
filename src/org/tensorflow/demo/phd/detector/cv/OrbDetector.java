@@ -295,7 +295,7 @@ public class OrbDetector implements CvDetector{
                     (float) scenePoints.get(3).y};
             Arrays.sort(xValues);
             Arrays.sort(yValues);
-            location.set(xValues[0], yValues[0], xValues[3], yValues[3]);
+            location.set(xValues[0], yValues[0], xValues[3], yValues[3]); //left, top, right, bottom
         } else return null;
 
         return new Recognition("",Pair.create(path, location));

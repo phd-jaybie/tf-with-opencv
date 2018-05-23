@@ -24,6 +24,27 @@ import android.util.Size;
 import android.util.TypedValue;
 import android.widget.Toast;
 
+import org.tensorflow.demo.Classifier;
+import org.tensorflow.demo.MrCameraActivity;
+import org.tensorflow.demo.MrThreadedCameraActivity;
+import org.tensorflow.demo.OverlayView;
+import org.tensorflow.demo.OverlayView.DrawCallback;
+import org.tensorflow.demo.R;
+import org.tensorflow.demo.TensorFlowMultiBoxDetector;
+import org.tensorflow.demo.TensorFlowObjectDetectionAPIModel;
+import org.tensorflow.demo.TensorFlowYoloDetector;
+import org.tensorflow.demo.augmenting.Augmenter;
+import org.tensorflow.demo.env.BorderedText;
+import org.tensorflow.demo.env.ImageUtils;
+import org.tensorflow.demo.env.Logger;
+import org.tensorflow.demo.phd.detector.cv.CvDetector;
+import org.tensorflow.demo.phd.detector.cv.OrbDetector;
+import org.tensorflow.demo.phd.detector.cv.SiftDetector;
+import org.tensorflow.demo.simulator.App;
+import org.tensorflow.demo.threading.ProcessManager;
+import org.tensorflow.demo.threading.ProcessTask;
+import org.tensorflow.demo.tracking.MultiBoxTracker;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,31 +52,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
 
-import org.tensorflow.demo.MrCameraActivity;
-import org.tensorflow.demo.Classifier;
-import org.tensorflow.demo.OverlayView;
-import org.tensorflow.demo.OverlayView.DrawCallback;
-import org.tensorflow.demo.R;
-import org.tensorflow.demo.TensorFlowImageClassifier;
-import org.tensorflow.demo.TensorFlowMultiBoxDetector;
-import org.tensorflow.demo.TensorFlowObjectDetectionAPIModel;
-import org.tensorflow.demo.TensorFlowYoloDetector;
-import org.tensorflow.demo.phd.detector.cv.CvDetector;
-import org.tensorflow.demo.phd.detector.cv.OrbDetector;
-import org.tensorflow.demo.phd.detector.cv.SiftDetector;
-import org.tensorflow.demo.env.BorderedText;
-import org.tensorflow.demo.env.ImageUtils;
-import org.tensorflow.demo.env.Logger;
-import org.tensorflow.demo.simulator.App;
-import org.tensorflow.demo.tracking.MultiBoxTracker;
-
-import org.tensorflow.demo.augmenting.Augmenter;
+import static org.tensorflow.demo.threading.ProcessManager.DETECTION_STARTED;
 
 /**
  * An activity that follows Tensorflow's demo DetectorActivity class as template and implements
  * classical visual detection using OpenCV.
  */
-public class MrDetectorActivity extends MrCameraActivity implements OnImageAvailableListener {
+public class MrThreadedDetectorActivity extends MrThreadedCameraActivity implements OnImageAvailableListener {
+
     private static final Logger LOGGER = new Logger();
 
     private int captureCount = 0;
@@ -157,6 +161,9 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
     private OverlayView augmentedOverlay;
     private Augmenter augmenter;
 
+    // final list of recognitions before rendering to the trackingOverlayView
+    private List<Classifier.Recognition> mappedRecognitions = new LinkedList<>();
+
     @Override
     public void onPreviewSizeChosen(final Size size, final int rotation) {
         final float textSizePx =
@@ -167,6 +174,8 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
 
         tracker = new MultiBoxTracker(this);
         augmenter = new Augmenter();
+
+        sProcessManager = ProcessManager.getInstance();
 
         // setting up a TF detector (a TF OD type)
         int cropSize = TF_OD_API_INPUT_SIZE;
@@ -282,7 +291,7 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                 });
 
         /**
-         * This following addCallback is declared in the MrThreadedCameraActivity class and is another method
+         * This following addCallback is declared in the CameraActivity class and is another method
          * implementation of the addCallback from the OverlayView. Also, this is the one that
          * draws on the debug_overlay, whereas the previous one is for the tracking_overlay.
          */
@@ -363,7 +372,7 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
             captureCount = 0;
         }*/
 
-        if (fastDebug) if (captureCount > CAPTURE_TIMEOUT) {
+/*        if (fastDebug) if (captureCount > CAPTURE_TIMEOUT) {
             long sum = 0;
             for (long d : overallTimes) sum += d;
             double averageOverall = 1.0d * sum / overallTimes.length;
@@ -386,7 +395,7 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
                 }
             }
             return;
-        }
+        }*/
 
         ++timestamp;
         final long currTimestamp = timestamp;
@@ -405,11 +414,20 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
         trackingOverlay.postInvalidate();
 
         // No mutex needed as this method is not reentrant.
-        if (computingDetection) {
+        // Figuring out how to handle if detection is running
+        if (!sProcessManager.isDetectionDone()) {
             readyForNextImage();
             return;
         }
+
+        if (!mappedRecognitions.isEmpty()) {
+            renderResults(currTimestamp);
+        }
+
+        mappedRecognitions.clear();
+
         computingDetection = true;
+
         LOGGER.i("Preparing image " + currTimestamp + " for detection in bg thread.");
 
         rgbFrameBitmap.setPixels(getRgbBytes(), 0, previewWidth, 0, 0, previewWidth, previewHeight);
@@ -432,202 +450,134 @@ public class MrDetectorActivity extends MrCameraActivity implements OnImageAvail
         //final Canvas inputCanvas = new Canvas(inputBitmap);
         //inputCanvas.drawBitmap(rgbFrameBitmap, frameToInputTransform, null);
 
-        runInBackground(
-                new Runnable() {
-                    @Override
-                    public void run() {
+        /**
+         * Originally runInBackground(new Runnable r)
+         */
 
-                        cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
-                        final Canvas canvas = new Canvas(cropCopyBitmap);
-                        final Paint paint = new Paint();
-                        paint.setColor(Color.RED);
-                        paint.setStyle(Style.STROKE);
-                        paint.setStrokeWidth(2.0f);
+        LOGGER.i("Running detection on image " + currTimestamp);
+        final long startTime = SystemClock.uptimeMillis();
+        long detectionTime = 0;
+        long begin = 0;
 
-                        float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
-                        switch (MODE) {
-                            case TF_OD_API:
-                                minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
-                                break;
-                            case MULTIBOX:
-                                minimumConfidence = MINIMUM_CONFIDENCE_MULTIBOX;
-                                break;
-                            case YOLO:
-                                minimumConfidence = MINIMUM_CONFIDENCE_YOLO;
-                                break;
-                        }
+        //sProcessManager.handleState(mProcessHandler, DETECTION_STARTED);
 
-                        // final list of recognitions before rendering ot the trackingOverlayView
-                        final List<Classifier.Recognition> mappedRecognitions =
-                                new LinkedList<>();
+        /** The for-loop below performs detection and transformation for each
+         * concurrent app that's running. Furthermore, the detection process can be
+         * performed remotely (instead of locally) by an app's associated remote
+         * supporting servers.
+         *
+         **/
+        for (final App app : appList) {
 
-                        LOGGER.i("Running detection on image " + currTimestamp);
-                        final long startTime = SystemClock.uptimeMillis();
-                        long detectionTime = 0;
-                        long begin = 0;
+            LOGGER.i("Doing app: " + app.toString());
 
-                        // This for-loop below performs detection and transformation for each
-                        // concurrent app that's running. Furthermore, the detection process can be
-                        // performed remotely (instead of locally) by an app's associated remote
-                        // supporting servers.
-                        for (final App app : appList) {
+            long detect1 = 0;
 
-                            LOGGER.i("Doing app: " + app.toString());
+            final List<Classifier.Recognition> appResults = new LinkedList<>(); // collection of results per app
+            List<String> objectsOfInterest = Arrays.asList(app.getObjectsOfInterest());
 
-                            long detect1 = 0;
+            Integer localHit = 0;
+            Integer localSecrecyHit = 0;
 
-                            final List<Classifier.Recognition> appResults =
-                                    new LinkedList<>(); // collection of results per app
-                            List<String> objectsOfInterest = Arrays.asList(app.getObjectsOfInterest());
+            switch (app.getMethod().first) {
+                case "TF_DETECTOR":
+                    List<Classifier.Recognition> results = new ArrayList<>();
 
-                            Integer localHit = 0;
-                            Integer localSecrecyHit = 0;
+                    /*switch (app.getMethod().second){
+                        case "MULTIBOX":
+                            //detection
+                            results = detector.recognizeImage(croppedBitmap);
 
-                            switch (app.getMethod().first) {
-                                case "TF_DETECTOR":
-                                    List<Classifier.Recognition> results = new ArrayList<>();
+                            break;
 
-                                    /*switch (app.getMethod().second){
-                                        case "MULTIBOX":
-                                            //detection
-                                            results = detector.recognizeImage(croppedBitmap);
+                        case "CLASSIFIER":
+                            // detection
+                            results = classifier.recognizeImage(croppedBitmap);
 
-                                            break;
+                            break;
+                    }*/
 
-                                        case "CLASSIFIER":
-                                            // detection
-                                            results = classifier.recognizeImage(croppedBitmap);
+                    sProcessManager.startTFDetection(detector, inputBitmap);
 
-                                            break;
-                                    }*/
-                                    begin = SystemClock.uptimeMillis();
-                                    results = detector.recognizeImage(inputBitmap); // no classifier
-                                    detect1 = SystemClock.uptimeMillis()-begin;
+                    break;
 
-                                    //transformation
-                                    for (final Classifier.Recognition dResult : results) {
-                                        final RectF location = dResult.getLocation();
-                                        if (location != null && dResult.getConfidence() >= minimumConfidence) {
-                                            inputToCropTransform.mapRect(location);
-                                            canvas.drawRect(location, paint);
+                case "CV_DETECTOR":
 
-                                            if (Arrays.asList(secretObjects).contains(dResult.getTitle())){
-                                                localSecrecyHit = 1;
-                                                //continue; //Don't overlay if object is secret.
-                                            } else if (objectsOfInterest.contains(dResult.getTitle())){ // case 3
-                                                localHit = 1;
-                                            }
+                    begin = SystemClock.uptimeMillis();
+                    CvDetector.Recognition result = new CvDetector.Recognition();
 
-                                            cropToFrameTransform.mapRect(location);
-                                            dResult.setLocation(location);
-                                            appResults.add(dResult);
-
-                                            //localHit = 1;
-
-                                        }
-                                    }
-
-                                    break;
-
-                                case "CV_DETECTOR":
-
-                                    begin = SystemClock.uptimeMillis();
-                                    CvDetector.Recognition result = new CvDetector.Recognition();
-
-                                    switch (app.getMethod().second) {
-                                        case "SIFT":
-                                            //detection
-                                            result = siftDetector.imageDetector(inputBitmap, app.getReference());
-                                            break;
-                                        case "ORB":
-                                            //detection
-                                            result = orbDetector.imageDetector(inputBitmap, app.getReference());
-                                            break;
-                                    }
-                                    detect1 = SystemClock.uptimeMillis()-begin;
-
-                                    if (result == null) break;
-
-                                    localHit = 1;
-
-                                    result.setTitle(app.getName());
-
-                                    Path locationPath = result.getLocation().first;
-                                    locationPath.transform(inputToCropTransform);
-                                    canvas.drawPath(locationPath, paint);
-
-                                    RectF locationRectF = result.getLocation().second;
-                                    inputToCropTransform.mapRect(locationRectF);
-                                    cropToFrameTransform.mapRect(locationRectF);
-                                    Classifier.Recognition cvDetection = new Classifier.
-                                            Recognition(app.getMethod().second, result.getTitle(),
-                                            minimumConfidence, result.getLocation().second);
-                                    appResults.add(cvDetection);
-
-                                    break;
-
-                            }
-
-                            // Measuring local detection time per app
-                            long detect2 = detectionTime;
-                            detectionTime = detect2 + detect1;
-
-                            // Measuring local hits for utility calculation
-                            final Integer previousHit = utilityHit;
-                            utilityHit = previousHit + localHit;
-
-                            final Integer previousSecretHit = secrecyHit;
-                            secrecyHit = previousSecretHit + localSecrecyHit;
-
-                            app.addCallback(
-                                    new App.AppCallback() {
-                                        @Override
-                                        public void appCallback() {
-                                            for (final Classifier.Recognition result: appResults) {
-                                                app.process(result, currTimestamp);
-                                            }
-                                        }
-                                    }
-                            );
-
-                            mappedRecognitions.addAll(appResults);
-
-                        }
-
-                        lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
-
-                        // pretty much rendering
-                        tracker.trackResults(mappedRecognitions, luminanceCopy, currTimestamp);
-                        augmenter.trackResults(luminanceCopy, currTimestamp);
-                        trackingOverlay.postInvalidate();
-
-                        requestRender();
-                        computingDetection = false;
-
-                        final long overallTime = SystemClock.uptimeMillis() - startTime;
-
-                        LOGGER.i("DataGathering, %d, %d, %d, %d, %d, %d, %d",
-                                captureCount, appList.size(),inputSize,overallTime, detectionTime,
-                                utilityHit, secrecyHit);
-                        if (fastDebug) {
-                            overallTimes[captureCount] = overallTime;
-                            detectionTimes[captureCount] = detectionTime;
-                        }
-
-                        if (logWriter!=null) {
-
-                            try {
-                                logWriter.write("DataGathering," + captureCount +","
-                                        + appList.size() + "," + inputSize +"," + overallTime + ","
-                                        + detectionTime);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-
-                        ++captureCount;
+                    switch (app.getMethod().second) {
+                        case "SIFT":
+                            //detection
+                            mProcessHandler = sProcessManager.startCVDetection(siftDetector,
+                                    inputBitmap, app.getReference());
+                            break;
+                        case "ORB":
+                            //detection
+                            mProcessHandler = sProcessManager.startCVDetection(orbDetector,
+                                    inputBitmap, app.getReference());
+                            break;
                     }
-                });
+
+                    break;
+
+            } //switch
+        } //for
+
+        computingDetection = false;
+
+    }
+
+    void renderResults(long currTimestamp){
+
+        cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
+        final Canvas canvas = new Canvas(cropCopyBitmap);
+        final Paint paint = new Paint();
+        paint.setColor(Color.RED);
+        paint.setStyle(Style.STROKE);
+        paint.setStrokeWidth(2.0f);
+
+/*        // Measuring local detection time per a app
+        long detect2 = detectionTime;
+        detectionTime = detect2 + detect1;
+
+        // Measuring local hits for utility calculation
+        final Integer previousHit = utilityHit;
+        utilityHit = previousHit + localHit;
+
+        final Integer previousSecretHit = secrecyHit;
+        secrecyHit = previousSecretHit + localSecrecyHit;
+
+        app.addCallback(
+                new App.AppCallback() {
+                    @Override
+                    public void appCallback() {
+                        for (final Classifier.Recognition result: appResults) {
+                            app.process(result, currTimestamp);
+                        }
+                    }
+                }
+        );
+
+        mappedRecognitions.addAll(appResults);
+
+    }*/
+
+        for (final Classifier.Recognition result : mappedRecognitions) {
+
+            final RectF location = result.getLocation();
+
+            inputToCropTransform.mapRect(location);
+            cropToFrameTransform.mapRect(location);
+
+        }
+
+        // pretty much rendering
+        tracker.trackResults(mappedRecognitions, luminanceCopy, currTimestamp);
+        augmenter.trackResults(luminanceCopy, currTimestamp);
+        trackingOverlay.postInvalidate();
+
+        requestRender();
 
     }
 
