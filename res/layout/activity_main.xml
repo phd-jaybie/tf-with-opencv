@@ -19,7 +19,7 @@
 
         <EditText
             android:id="@+id/number_of_apps"
-            android:layout_width="120dp"
+            android:layout_width="50dp"
             android:layout_height="match_parent"
             android:layout_marginLeft="@dimen/margin_small"
             android:layout_weight="1"
@@ -43,6 +43,19 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="4" />
+
+        <Switch
+            android:id="@+id/fixed_apps_toggle"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="@dimen/margin_small"
+            android:layout_weight="1"
+            android:checked="false"
+            android:onClick="onFixedApps"
+            android:splitTrack="false"
+            android:text="@string/toggle_fixed"
+            android:textColor="@android:color/darker_gray"
+            tools:checked="false" />
 
         <Switch
             android:id="@+id/debug_toggle"
@@ -70,8 +83,8 @@
             android:id="@+id/capture_size"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:layout_weight="3"
             android:layout_marginStart="@dimen/margin_small"
+            android:layout_weight="3"
             android:ems="4"
             android:hint="@string/input_size"
             android:inputType="number"
@@ -83,8 +96,8 @@
             android:id="@+id/remote_url"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:layout_weight="4"
             android:layout_marginEnd="@dimen/margin_small"
+            android:layout_weight="4"
             android:ems="8"
             android:hint="@string/remote_url"
             android:inputType="textUri"
@@ -93,13 +106,13 @@
             android:textSize="14sp" />
 
         <Switch
-            android:layout_width="wrap_content"
             android:id="@+id/network_toggle"
+            android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:layout_weight="3"
             android:layout_marginEnd="@dimen/margin_small"
-            android:ems="5"
+            android:layout_weight="3"
             android:checked="false"
+            android:ems="5"
             android:onClick="onNetworkProcess"
             android:splitTrack="false"
             android:text="@string/toggle_network_debug"
@@ -109,13 +122,43 @@
     </LinearLayout>
 
     <Button
-        android:id="@+id/mr_detection"
+        android:id="@+id/mr_null"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/margin_small"
         android:layout_weight="1"
-        android:onClick="mrDetectionIntent"
-        android:text="@string/activity_name_mr_detection" />
+        android:onClick="mrNullIntent"
+        android:text="@string/activity_name_mr_null" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/margin_small"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/mr_detection"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/margin_small"
+            android:layout_weight="10"
+            android:onClick="mrDetectionIntent"
+            android:text="@string/activity_name_mr_detection" />
+
+        <Switch
+            android:id="@+id/thread_toggle"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="@dimen/margin_small"
+            android:layout_weight="1"
+            android:checked="false"
+            android:onClick="onThread"
+            android:splitTrack="false"
+            android:text="@string/toggle_thread"
+            android:textColor="@android:color/darker_gray"
+            tools:checked="false" />
+
+    </LinearLayout>
 
     <Button
         android:id="@+id/mr_detection_with_abstraction"
