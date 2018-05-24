@@ -2,6 +2,11 @@ package org.tensorflow.demo.threading;
 
 import android.graphics.Bitmap;
 
+import org.tensorflow.demo.Classifier;
+import org.tensorflow.demo.phd.detector.cv.CvDetector;
+
+import java.util.List;
+
 /**
  * Created by deg032 on 22/5/18.
  */
@@ -39,9 +44,9 @@ public class FrameTrackingRunnable implements Runnable {
          */
         void handleFrameTrackingState(int state);
 
-        void setInputBitmap(Bitmap inputBitmap);
-
         Bitmap getInputBitmap();
+
+        void setCVResults(CvDetector.Recognition result);
 
     }
 

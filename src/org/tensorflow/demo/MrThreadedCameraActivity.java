@@ -119,7 +119,7 @@ public abstract class MrThreadedCameraActivity extends FragmentActivity
   protected static List<App> appList;
   protected static String appListText;
 
-  protected ProcessManager sProcessManager;
+  protected static ProcessManager sProcessManager;
 
   @Override
   protected void onCreate(final Bundle savedInstanceState) {
@@ -374,12 +374,15 @@ public abstract class MrThreadedCameraActivity extends FragmentActivity
   @Override
   public synchronized void onStop() {
     LOGGER.d("onStop " + this);
+
+    ProcessManager.cancelAll();
     super.onStop();
   }
 
   @Override
   public synchronized void onDestroy() {
     LOGGER.d("onDestroy " + this);
+
     ProcessManager.cancelAll();
     super.onDestroy();
   }

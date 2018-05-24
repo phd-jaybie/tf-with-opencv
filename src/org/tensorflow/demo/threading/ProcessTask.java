@@ -1,15 +1,12 @@
 package org.tensorflow.demo.threading;
 
 import android.graphics.Bitmap;
-import android.graphics.RectF;
 
 import org.tensorflow.demo.Classifier;
-import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.phd.detector.cv.CvDetector;
-import org.tensorflow.demo.phd.detector.cv.OrbDetector;
-import org.tensorflow.demo.phd.detector.cv.SiftDetector;
+import org.tensorflow.demo.tracking.MultiBoxTracker;
 
-import java.util.LinkedList;
+import java.lang.ref.WeakReference;
 import java.util.List;
 
 /**
@@ -43,9 +40,13 @@ public class ProcessTask implements
      * An object that contains the ThreadPool singleton.
      */
     private static ProcessManager sProcessManager;
+    private WeakReference<MultiBoxTracker> mTrackerWeakRef; // This is the current tracker from the UI.
 
     // Input Bitmap frame to be processed
     private Bitmap mInputFrame;
+    private byte[] mLuminanceCopy;
+    private long mCurrentFrame;
+
     private List<Classifier.Recognition> mResults;
     private Classifier mDetector; //for TF detection
     private CvDetector cvDetector; //for OpenCV detection
@@ -82,22 +83,62 @@ public class ProcessTask implements
         }
     }
 
-/*    *//**
+    /**
      * Recycles an Process Task object before it's put back into the pool. One reason to do
      * this is to avoid memory leaks.
-     *//*
+     **/
     void recycle() {
 
         // Deletes the weak reference to the imageView
-        if ( null != mImageWeakRef ) {
-            mImageWeakRef.clear();
-            mImageWeakRef = null;
+        // Deletes the weak reference to the imageView
+        if ( null != mTrackerWeakRef ) {
+            mTrackerWeakRef.clear();
+            mTrackerWeakRef = null;
         }
 
+        mCurrentFrame = 0;
+
         // Releases references to the byte buffer and the BitMap
-        mImageBuffer = null;
-        mDecodedImage = null;
-    }*/
+        if (mResults!=null) mResults.clear();
+        mInputFrame = null;
+        mLuminanceCopy = null;
+
+    }
+
+    /**
+     * Initializes the Task
+     *
+     * @param processManager A ThreadPool object
+     * @param tracker An MultiBox tracker from the Main.UI Thread that handles the rendering.
+     * @param inputBitmap current inputBitmap to be processed.
+     */
+    void initializeDetector(
+            ProcessManager processManager,
+            MultiBoxTracker tracker,
+            Bitmap inputBitmap,
+            byte[] luminanceCopy,
+            long currentFrame)
+    {
+        // Sets this object's ThreadPool field to be the input argument
+        sProcessManager = processManager;
+
+        // Gets the URL for the View
+        mTrackerWeakRef = new WeakReference<>(tracker);
+
+        mInputFrame = inputBitmap;
+
+        mLuminanceCopy = luminanceCopy;
+        mCurrentFrame = currentFrame;
+
+    }
+
+    void setTFDetector(Classifier detector){
+        mDetector = detector;
+    }
+
+    void setCVDetector(CvDetector detector){
+        cvDetector = detector;
+    }
 
     @Override
     public void setFrameTrackingThread(Thread currentThread) { setCurrentThread(currentThread);
@@ -129,19 +170,34 @@ public class ProcessTask implements
         return mInputFrame;
     }
 
-    @Override
-    public void setInputBitmap(Bitmap inputBitmap){
-        mInputFrame = inputBitmap;
-    }
-
-    @Override
     public List<Classifier.Recognition> getResults(){
         return mResults;
     };
 
+    public byte[] getLuminanceCopy(){
+        return mLuminanceCopy;
+    };
+
     @Override
-    public void setResults(List<Classifier.Recognition> results){
+    public long getCurrentFrame(){
+        return mCurrentFrame;
+    }
+
+    @Override
+    public void setTFResults(List<Classifier.Recognition> results){
         mResults = results;
+    };
+
+    @Override
+    public void setCVResults(CvDetector.Recognition result){
+
+        result.setTitle("CV_DETECTOR");
+
+        Classifier.Recognition cvDetection = new Classifier.
+                Recognition("SIFT/ORB", result.getTitle(),
+                0.6f, result.getLocation().second);
+
+        mResults.add(cvDetection);
     };
 
     @Override
@@ -170,17 +226,16 @@ public class ProcessTask implements
         handleState(outState);
     };
 
-    public void setTFDetector(Classifier detector){
-        mDetector = detector;
-    }
-
     @Override
     public Classifier getDetector(){
         return mDetector;
     }
 
-    public void setCVDetector(CvDetector detector){
-        cvDetector = detector;
+    public MultiBoxTracker getTracker(){
+        if (mTrackerWeakRef!=null){
+            return mTrackerWeakRef.get();
+        }
+        return null;
     }
 
     // Returns the instance that downloaded the image

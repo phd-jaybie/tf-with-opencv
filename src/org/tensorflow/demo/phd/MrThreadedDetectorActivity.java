@@ -14,9 +14,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Paint.Style;
-import android.graphics.Path;
-import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.media.ImageReader.OnImageAvailableListener;
 import android.os.SystemClock;
@@ -25,7 +22,6 @@ import android.util.TypedValue;
 import android.widget.Toast;
 
 import org.tensorflow.demo.Classifier;
-import org.tensorflow.demo.MrCameraActivity;
 import org.tensorflow.demo.MrThreadedCameraActivity;
 import org.tensorflow.demo.OverlayView;
 import org.tensorflow.demo.OverlayView.DrawCallback;
@@ -51,8 +47,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
-
-import static org.tensorflow.demo.threading.ProcessManager.DETECTION_STARTED;
 
 /**
  * An activity that follows Tensorflow's demo DetectorActivity class as template and implements
@@ -150,7 +144,7 @@ public class MrThreadedDetectorActivity extends MrThreadedCameraActivity impleme
     private Matrix inputToCropTransform;
     private Matrix cropToInputTransform;
 
-    private MultiBoxTracker tracker;
+    private static MultiBoxTracker tracker;
 
     private byte[] luminanceCopy;
 
@@ -162,7 +156,7 @@ public class MrThreadedDetectorActivity extends MrThreadedCameraActivity impleme
     private Augmenter augmenter;
 
     // final list of recognitions before rendering to the trackingOverlayView
-    private List<Classifier.Recognition> mappedRecognitions = new LinkedList<>();
+    //private List<Classifier.Recognition> mappedRecognitions = new LinkedList<>();
 
     @Override
     public void onPreviewSizeChosen(final Size size, final int rotation) {
@@ -415,16 +409,10 @@ public class MrThreadedDetectorActivity extends MrThreadedCameraActivity impleme
 
         // No mutex needed as this method is not reentrant.
         // Figuring out how to handle if detection is running
-        if (!sProcessManager.isDetectionDone()) {
+        if (!sProcessManager.isDetectionWorkQueueEmpty() || computingDetection){//(tracker.checkTrackedObjects()) {
             readyForNextImage();
             return;
         }
-
-        if (!mappedRecognitions.isEmpty()) {
-            renderResults(currTimestamp);
-        }
-
-        mappedRecognitions.clear();
 
         computingDetection = true;
 
@@ -455,9 +443,9 @@ public class MrThreadedDetectorActivity extends MrThreadedCameraActivity impleme
          */
 
         LOGGER.i("Running detection on image " + currTimestamp);
-        final long startTime = SystemClock.uptimeMillis();
+/*        final long startTime = SystemClock.uptimeMillis();
         long detectionTime = 0;
-        long begin = 0;
+        long begin = 0;*/
 
         //sProcessManager.handleState(mProcessHandler, DETECTION_STARTED);
 
@@ -496,26 +484,27 @@ public class MrThreadedDetectorActivity extends MrThreadedCameraActivity impleme
 
                             break;
                     }*/
+                    if (inputBitmap==null) break;
 
-                    sProcessManager.startTFDetection(detector, inputBitmap);
+                    sProcessManager.startTFDetection(tracker, detector, inputBitmap, luminanceCopy,
+                            currTimestamp);
 
                     break;
 
                 case "CV_DETECTOR":
 
-                    begin = SystemClock.uptimeMillis();
                     CvDetector.Recognition result = new CvDetector.Recognition();
 
                     switch (app.getMethod().second) {
                         case "SIFT":
                             //detection
-                            mProcessHandler = sProcessManager.startCVDetection(siftDetector,
-                                    inputBitmap, app.getReference());
+                            sProcessManager.startCVDetection(tracker, siftDetector, inputBitmap,
+                                    app.getReference(), luminanceCopy, currTimestamp);
                             break;
                         case "ORB":
                             //detection
-                            mProcessHandler = sProcessManager.startCVDetection(orbDetector,
-                                    inputBitmap, app.getReference());
+                            sProcessManager.startCVDetection(tracker, orbDetector, inputBitmap,
+                                    app.getReference(), luminanceCopy, currTimestamp);
                             break;
                     }
 
@@ -528,6 +517,7 @@ public class MrThreadedDetectorActivity extends MrThreadedCameraActivity impleme
 
     }
 
+/*
     void renderResults(long currTimestamp){
 
         cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
@@ -537,6 +527,7 @@ public class MrThreadedDetectorActivity extends MrThreadedCameraActivity impleme
         paint.setStyle(Style.STROKE);
         paint.setStrokeWidth(2.0f);
 
+*/
 /*        // Measuring local detection time per a app
         long detect2 = detectionTime;
         detectionTime = detect2 + detect1;
@@ -561,7 +552,8 @@ public class MrThreadedDetectorActivity extends MrThreadedCameraActivity impleme
 
         mappedRecognitions.addAll(appResults);
 
-    }*/
+    }*//*
+
 
         for (final Classifier.Recognition result : mappedRecognitions) {
 
@@ -580,6 +572,7 @@ public class MrThreadedDetectorActivity extends MrThreadedCameraActivity impleme
         requestRender();
 
     }
+*/
 
     @Override
     protected int getLayoutId() {

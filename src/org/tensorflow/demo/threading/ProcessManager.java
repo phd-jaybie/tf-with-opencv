@@ -13,6 +13,7 @@ import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.phd.detector.cv.CvDetector;
 import org.tensorflow.demo.simulator.App;
 import org.tensorflow.demo.simulator.AppRandomizer;
+import org.tensorflow.demo.tracking.MultiBoxTracker;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -151,9 +152,11 @@ public class ProcessManager{
                 // Gets the image task from the incoming Message object.
                 ProcessTask processTask = (ProcessTask) inputMessage.obj;
 
-                // Sets an PhotoView that's a weak reference to the
-                // input ImageView
-                //PhotoView localView = photoTask.getPhotoView();
+                MultiBoxTracker tracker = processTask.getTracker();
+
+                byte[] luminanceCopy = processTask.getLuminanceCopy();
+                List<Classifier.Recognition> mappedRecognitions = processTask.getResults();
+                long currentFrame = processTask.getCurrentFrame();
 
                 switch (inputMessage.what) {
 
@@ -168,9 +171,11 @@ public class ProcessManager{
                      */
                     case DETECTION_COMPLETE:
 
-                        // Sets background color to golden yellow
-                        //localView.setStatusResource(R.drawable.decodequeued);
-                        //cancelTracking(processTask); // for future handling with tracking
+                        if (mappedRecognitions != null && tracker!=null) {
+                            tracker.trackResults(mappedRecognitions, luminanceCopy, currentFrame);
+                        }
+                        recycleTask(processTask);
+
                         break;
                     // If the decode has started, sets background color to orange
                     case TRACKING_STARTED:
@@ -183,12 +188,11 @@ public class ProcessManager{
                      */
                     case TRACKING_COMPLETE:
                         //localView.setImageBitmap(photoTask.getImage());
-                        //recycleTask(photoTask);
+                        recycleTask(processTask);
                         break;
                     // The download failed, sets the background color to dark red
                     case DETECTION_FAILED:
                         //localView.setStatusResource(R.drawable.imagedownloadfailed);
-
                         // Attempts to re-use the Task object
                         recycleTask(processTask);
                         break;
@@ -214,13 +218,15 @@ public class ProcessManager{
             case TRACKING_COMPLETE:
 
                 // Gets a Message object, stores the state in it, and sends it to the Handler
-                Message completeMessage = mHandler.obtainMessage(state, processTask);
-                completeMessage.sendToTarget();
+                //Message completeMessage = mHandler.obtainMessage(state, processTask);
+                //completeMessage.sendToTarget();
                 break;
 
             // OBJECT DETECTION finished.
             case DETECTION_COMPLETE:
 
+                Message completeMessage = mHandler.obtainMessage(state, processTask);
+                completeMessage.sendToTarget();
 
                 // In all other cases, pass along the message without any other action.
             default:
@@ -305,7 +311,8 @@ public class ProcessManager{
         }
     }
 
-    public ProcessTask startTFDetection(Classifier detector, Bitmap inputBitmap){
+    public void startTFDetection(MultiBoxTracker tracker, Classifier detector,
+                                        Bitmap inputBitmap, byte[] luminanceCopy, long currentFrame){
         /*
          * Gets a task from the pool of tasks, returning null if the pool is empty
          */
@@ -316,9 +323,10 @@ public class ProcessManager{
             detectionTask = new ProcessTask();
         }
 
+        detectionTask.initializeDetector(sInstance, tracker, inputBitmap, luminanceCopy, currentFrame);
+        detectionTask.setTFDetector(detector);
+
         try {
-            detectionTask.setTFDetector(detector);
-            detectionTask.setInputBitmap(inputBitmap);
             sInstance.mObjectDetetionThreadPool.execute(detectionTask.getObjectDetectionRunnable());
         } catch (Exception e) {
             e.printStackTrace();
@@ -327,11 +335,13 @@ public class ProcessManager{
 
         sInstance.handleState(detectionTask, DETECTION_STARTED);
 
-        return detectionTask;
+        //return detectionTask;
 
     }
 
-    public ProcessTask startCVDetection(CvDetector detector, Bitmap inputBitmap, AppRandomizer.ReferenceImage refImage){
+    public void startCVDetection(MultiBoxTracker tracker, CvDetector detector,
+                                        Bitmap inputBitmap, AppRandomizer.ReferenceImage refImage,
+                                        byte[] luminanceCopy, long currentFrame){
         /*
          * Gets a task from the pool of tasks, returning null if the pool is empty
          */
@@ -342,8 +352,10 @@ public class ProcessManager{
             detectionTask = new ProcessTask();
         }
 
+        detectionTask.initializeDetector(sInstance, tracker, inputBitmap, luminanceCopy, currentFrame);
+        detectionTask.setCVDetector(detector);
+
         try {
-            detectionTask.setInputBitmap(inputBitmap);
             //sInstance.handleState(detectionTask, DETECTION_STARTED);
             sInstance.mObjectDetetionThreadPool.execute(detectionTask.getObjectDetectionRunnable());
         } catch (Exception e) {
@@ -351,9 +363,9 @@ public class ProcessManager{
             //sInstance.handleState(detectionTask, DETECTION_FAILED);
         }
 
-        //Instance.handleState(detectionTask, DETECTION_STARTED);
+        sInstance.handleState(detectionTask, DETECTION_STARTED);
 
-        return detectionTask;
+        //return detectionTask;
 
     }
 
@@ -365,14 +377,14 @@ public class ProcessManager{
     void recycleTask(ProcessTask detectionTask) {
 
         // Frees up memory in the task
-        //detectionTask.recycle();
+        detectionTask.recycle();
 
         // Puts the task object back into the queue for re-use.
         mProcessTaskWorkQueue.offer(detectionTask);
     }
 
-    public boolean isDetectionDone(){
-        if (this.mProcessTaskWorkQueue.isEmpty()) return true;
+    public boolean isDetectionWorkQueueEmpty(){
+        if (this.mObjectDetetionWorkQueue.isEmpty()) return true;
         else return false;
     }
 

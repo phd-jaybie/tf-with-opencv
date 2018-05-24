@@ -35,6 +35,8 @@ public class ObjectDetectionRunnable implements Runnable {
 
     private static Classifier mDetector; //for TF detection
     private static Bitmap mInputBitmap;
+    private static long mCurrentFrame;
+
     /**
      *
      * An interface that defines methods that PhotoTask implements. An instance of
@@ -56,15 +58,13 @@ public class ObjectDetectionRunnable implements Runnable {
          */
         void handleObjectDetectionState(int state);
 
-        void setInputBitmap(Bitmap inputBitmap);
-
         Bitmap getInputBitmap();
 
         Classifier getDetector();
 
-        List<Classifier.Recognition> getResults();
+        long getCurrentFrame();
 
-        void setResults(List<Classifier.Recognition> results);
+        void setTFResults(List<Classifier.Recognition> results);
 
     }
 
@@ -103,33 +103,50 @@ public class ObjectDetectionRunnable implements Runnable {
 
         mProcessTask.handleObjectDetectionState(DETECTION_STATE_STARTED);
 
+        mInputBitmap = mProcessTask.getInputBitmap();
+        mDetector = mProcessTask.getDetector();
+        mCurrentFrame = mProcessTask.getCurrentFrame();
+
+        if (mInputBitmap==null || mDetector==null) {
+            LOGGER.d("Detection Failed.");
+            mProcessTask.handleObjectDetectionState(DETECTION_STATE_FAILED);
+            return;
+        }
+
         try {
             if (Thread.interrupted()) {
                 throw new InterruptedException();
             }
 
-            mInputBitmap = mProcessTask.getInputBitmap();
-            mDetector = mProcessTask.getDetector();
             results = mDetector.recognizeImage(mInputBitmap);
+            mProcessTask.handleObjectDetectionState(DETECTION_STATE_COMPLETED);
 
         } catch (Exception e){
+
             e.printStackTrace();
-            mProcessTask.handleObjectDetectionState(DETECTION_STATE_FAILED);
-            return;
+
+        } finally {
+
+            if (results == null) {
+                LOGGER.d("Detection Failed.");
+                mProcessTask.handleObjectDetectionState(DETECTION_STATE_FAILED);
+                return;
+            }
+
+            LOGGER.d("Detection Completed.");
+
+            final long detectionTime = SystemClock.uptimeMillis() - startTime;
+            mProcessTask.setTFResults(processTFResults(results));
+
+            LOGGER.i("%d, Detection Time: %d" , mCurrentFrame , detectionTime);
+
+            // Sets the reference to the current Thread to null, releasing its storage
+            mProcessTask.setObjectDetectionThread(null);
+
+            // Clears the Thread's interrupt flag
+            Thread.interrupted();
 
         }
-
-        final long detectionTime = SystemClock.uptimeMillis() - startTime;
-        mProcessTask.setResults(processTFResults(results));
-        mProcessTask.handleObjectDetectionState(DETECTION_STATE_COMPLETED);
-
-        LOGGER.i("Detection Time", detectionTime);
-
-        // Sets the reference to the current Thread to null, releasing its storage
-        mProcessTask.setObjectDetectionThread(null);
-
-        // Clears the Thread's interrupt flag
-        Thread.interrupted();
 
     }
 

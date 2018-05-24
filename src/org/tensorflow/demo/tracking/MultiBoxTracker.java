@@ -419,4 +419,11 @@ public class MultiBoxTracker {
         recogToReplace != null ? recogToReplace.color : availableColors.poll();
     trackedObjects.add(trackedRecognition);
   }
+
+  public boolean checkTrackedObjects(){
+    if (trackedObjects.isEmpty()) return false;
+
+    return true;
+
+  }
 }
